@@ -45,7 +45,12 @@ class RuralSyncApiService {
                   body
             })
       }
-
+      async login(email: string, password: string , role: string): Promise<void> {
+            return this.request("/auth/login", {
+                  method: "POST",
+                  body: JSON.stringify({ email, password , role }),
+            })
+      }
 
 
 }
