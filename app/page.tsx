@@ -1,45 +1,38 @@
+"use client"
+
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Search, MapPin, Clock, Star, Users, Shield, Zap } from "lucide-react"
 import Link from "next/link"
+import { Header } from "@/components/header"
+import { useAuthStore } from "@/store/store"
 
 export default function HomePage() {
+  const { initializeAuth, isLoading } = useAuthStore()
+
+  useEffect(() => {
+    initializeAuth()
+  }, [initializeAuth])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">RS</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">RuralSync</span>
-          </Link>
+      <Header />
 
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link href="/services" className="text-gray-600 hover:text-green-600 transition-colors">
-              Services
-            </Link>
-            <Link href="/providers" className="text-gray-600 hover:text-green-600 transition-colors">
-              Providers
-            </Link>
-            <Link href="/bookings" className="text-gray-600 hover:text-green-600 transition-colors">
-              My Bookings
-            </Link>
-          </nav>
-
-          <div className="flex items-center space-x-3">
-            <Link href="/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link href="/register">
-              <Button className="bg-green-600 hover:bg-green-700">Sign Up</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
+      {/* Rest of the component remains the same */}
       {/* Hero Section */}
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
@@ -192,7 +185,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white hover:text-green-600"
+                className="border-white text-white hover:bg-white hover:text-green-600 bg-transparent"
               >
                 Browse Services
               </Button>
@@ -287,4 +280,3 @@ export default function HomePage() {
     </div>
   )
 }
-
