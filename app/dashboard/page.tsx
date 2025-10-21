@@ -23,18 +23,25 @@ interface DashboardStats {
 
 interface RecentBooking {
   _id: string
-  services: Array<{
-    serviceId: {
-      serviceName: string
-      serviceProvider: {
-        companyName: string
-      }
-    }
-    bookingDate: string
-    bookingTime: string
-  }>
+  service: {
+    _id: string
+    name: string
+    description?: string
+  }
+  serviceProvider: {
+    _id: string
+    name: string
+    email: string
+  }
+  bookingDate: string
+  bookingTime: string
   status: string
-  totalAmount: number
+  totalPrice?: number
+  paymentStatus?: string
+  extraTasks?: Array<{
+    description: string
+    extraPrice: string
+  }>
 }
 
 interface RecentReview {
@@ -69,22 +76,47 @@ export default function DashboardPage() {
     try {
       setLoading(true)
 
-      // Fetch bookings
-      const bookings = await apiService.getUserBookings()
-      setRecentBookings(bookings.slice(0, 5))
+      // Fetch bookings with null/undefined check
+      const bookingsResponse = await apiService.getUserBookings()
+      const bookings = Array.isArray(bookingsResponse) ? bookingsResponse : []
+      
+      // Filter valid bookings and set recent bookings
+      const validBookings = bookings.filter(
+        (b: any) => b && b.service && b.bookingDate
+      )
+      setRecentBookings(validBookings.slice(0, 5))
 
       // Calculate stats from bookings
       const totalBookings = bookings.length
-      const completedBookings = bookings.filter((b: any) => b.status.toLowerCase() === "completed").length
-      const pendingBookings = bookings.filter((b: any) => b.status.toLowerCase() === "pending").length
-      const totalSpent = bookings.reduce((sum: number, booking: any) => sum + booking.totalAmount, 0)
+      const completedBookings = bookings.filter(
+        (b: any) => b && b.status && b.status.toLowerCase() === "completed"
+      ).length
+      const pendingBookings = bookings.filter(
+        (b: any) => b && b.status && (b.status.toLowerCase() === "pending" || b.status.toLowerCase() === "not assigned")
+      ).length
+      
+      // Calculate total spent from totalPrice field
+      const totalSpent = bookings.reduce(
+        (sum: number, booking: any) => {
+          const price = booking?.totalPrice || 0
+          const extraTasksTotal = booking?.extraTasks?.reduce(
+            (taskSum: number, task: any) => taskSum + (parseFloat(task?.extraPrice) || 0),
+            0
+          ) || 0
+          return sum + price + extraTasksTotal
+        },
+        0
+      )
 
-      // Fetch reviews
-      const reviews = await apiService.getCustomerReviews()
+      // Fetch reviews with null/undefined check
+      const reviewsResponse = await apiService.getCustomerReviews()
+      const reviews = Array.isArray(reviewsResponse) ? reviewsResponse : []
       setRecentReviews(reviews.slice(0, 3))
 
       const averageRating =
-        reviews.length > 0 ? reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / reviews.length : 0
+        reviews.length > 0
+          ? reviews.reduce((sum: number, review: any) => sum + (review?.rating || 0), 0) / reviews.length
+          : 0
 
       setStats({
         totalBookings,
@@ -96,13 +128,17 @@ export default function DashboardPage() {
       })
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error)
+      // Set empty arrays on error to prevent undefined issues
+      setRecentBookings([])
+      setRecentReviews([])
     } finally {
       setLoading(false)
     }
   }
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
+    const statusLower = status?.toLowerCase() || ""
+    switch (statusLower) {
       case "pending":
         return "bg-yellow-100 text-yellow-800"
       case "confirmed":
@@ -118,6 +154,16 @@ export default function DashboardPage() {
     }
   }
 
+  // Helper function to calculate total booking price
+  const calculateBookingTotal = (booking: RecentBooking) => {
+    const basePrice = booking.totalPrice || 0
+    const extraTasksTotal = booking.extraTasks?.reduce(
+      (sum, task) => sum + (parseFloat(task.extraPrice) || 0),
+      0
+    ) || 0
+    return basePrice + extraTasksTotal
+  }
+
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50">
@@ -128,7 +174,7 @@ export default function DashboardPage() {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}!</h1>
+                <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name || "Guest"}!</h1>
                 <p className="text-gray-600 mt-1">Here's what's happening with your account today.</p>
               </div>
               <Link href="/services">
@@ -167,7 +213,7 @@ export default function DashboardPage() {
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${stats.totalSpent}</div>
+                <div className="text-2xl font-bold">${stats.totalSpent.toFixed(2)}</div>
                 <p className="text-xs text-muted-foreground">Across all services</p>
               </CardContent>
             </Card>
@@ -215,30 +261,42 @@ export default function DashboardPage() {
                     </div>
                   ) : recentBookings.length > 0 ? (
                     <div className="space-y-4">
-                      {recentBookings.map((booking) => (
-                        <div key={booking._id} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div className="flex-1">
-                            <h4 className="font-medium">{booking.services[0]?.serviceId.serviceName}</h4>
-                            <p className="text-sm text-gray-600">
-                              by {booking.services[0]?.serviceId.serviceProvider.companyName}
-                            </p>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                {new Date(booking.services[0]?.bookingDate).toLocaleDateString()}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-4 h-4" />
-                                {booking.services[0]?.bookingTime}
-                              </span>
+                      {recentBookings.map((booking) => {
+                        if (!booking.service) return null
+
+                        return (
+                          <div key={booking._id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex-1">
+                              <h4 className="font-medium">
+                                {booking.service?.name || "Unknown Service"}
+                              </h4>
+                              <p className="text-sm text-gray-600">
+                                by {booking.serviceProvider?.name || "Unknown Provider"}
+                              </p>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  {booking.bookingDate
+                                    ? new Date(booking.bookingDate).toLocaleDateString()
+                                    : "Date not set"}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  {booking.bookingTime || "Time not set"}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <Badge className={getStatusColor(booking.status)}>
+                                {booking.status || "Unknown"}
+                              </Badge>
+                              <div className="text-lg font-semibold text-green-600 mt-1">
+                                ${calculateBookingTotal(booking).toFixed(2)}
+                              </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                            <div className="text-lg font-semibold text-green-600 mt-1">${booking.totalAmount}</div>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-8">
@@ -297,27 +355,35 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-4 mb-4">
                     <Avatar className="w-16 h-16">
                       <AvatarImage src="/placeholder.svg" />
-                      <AvatarFallback className="text-lg">{user?.name}</AvatarFallback>
+                      <AvatarFallback className="text-lg">
+                        {user?.name?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold">{user?.name}</h3>
-                      <p className="text-sm text-gray-600">{user?.email}</p>
+                      <h3 className="font-semibold">{user?.name || "Guest User"}</h3>
+                      <p className="text-sm text-gray-600">{user?.email || "No email"}</p>
                     </div>
                   </div>
 
                   <div className="space-y-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span>{user?.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-400" />
-                      <span>{user?.address}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-gray-400" />
-                      <span>{user?.email}</span>
-                    </div>
+                    {user?.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-gray-400" />
+                        <span>{user.phone}</span>
+                      </div>
+                    )}
+                    {user?.address && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-gray-400" />
+                        <span>{user.address}</span>
+                      </div>
+                    )}
+                    {user?.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                        <span>{user.email}</span>
+                      </div>
+                    )}
                   </div>
 
                   <Link href="/dashboard/settings">
@@ -354,15 +420,17 @@ export default function DashboardPage() {
                               <Star
                                 key={i}
                                 className={`w-4 h-4 ${
-                                  i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                                  i < (review.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
                                 }`}
                               />
                             ))}
                           </div>
-                          <p className="text-sm font-medium">{review.serviceProvider.companyName}</p>
-                          <p className="text-xs text-gray-600 line-clamp-2">{review.comment}</p>
+                          <p className="text-sm font-medium">
+                            {review.serviceProvider?.companyName || "Unknown Provider"}
+                          </p>
+                          <p className="text-xs text-gray-600 line-clamp-2">{review.comment || "No comment"}</p>
                           <p className="text-xs text-gray-500 mt-1">
-                            {new Date(review.createdAt).toLocaleDateString()}
+                            {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : "Date unknown"}
                           </p>
                         </div>
                       ))}

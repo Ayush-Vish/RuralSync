@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,9 +12,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
 import { apiService } from "@/lib/api-service"
+import { useAuthStore } from "@/store/store"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { isLoggedIn, isLoading } = useAuthStore()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -23,13 +25,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (!isLoading && isLoggedIn) {
+      router.push("/dashboard")
+    }
+  }, [isLoggedIn, isLoading, router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
 
     try {
-      await apiService.login(formData.email, formData.password , "CLIENT"  )
+      await apiService.login(formData.email, formData.password)
       router.push("/dashboard")
     } catch (error) {
       setError("Invalid email or password. Please try again.")

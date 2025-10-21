@@ -151,55 +151,77 @@ class ApiService {
     })
   }
 
+  // -------------------- Service Providers --------------------
+  async getAllServiceProviders() {
+    return this.request("customer", "/services/service-provider")
+  }
+
+  async getServiceProviderById(providerId: string) {
+    return this.request("customer", `/services/service-provider/${providerId}`)
+  }
+
   // -------------------- Profile --------------------
   async getCustomerProfile() {
-    return this.request("customer", "/customers/profile")
+    return this.request("customer", "/profile")
   }
 
   async updateCustomerProfile(profileData: any) {
-    return this.request("customer", "/customers/profile-update", {
+    return this.request("customer", "/profile-update", {
       method: "PUT",
       body: JSON.stringify(profileData),
     })
   }
 
   async changePassword(passwordData: {
-    currentPassword: string
+    oldPassword: string
     newPassword: string
+    role: string
   }) {
-    return this.request("customer", "/customers/password", {
+    return this.request("customer", "/password", {
       method: "PATCH",
       body: JSON.stringify(passwordData),
+    })
+  }
+
+  async updateProfileImage(imageFile: File) {
+    const formData = new FormData()
+    formData.append("image", imageFile)
+    
+    return this.request("customer", "/profile/image", {
+      method: "POST",
+      body: formData,
+      headers: {}, // Let browser set Content-Type for FormData
     })
   }
 
   // -------------------- Reviews --------------------
   async createReview(reviewData: {
     serviceProviderId: string
+    serviceId: string
     rating: number
     comment: string
   }) {
-    return this.request("customer", "/reviews", {
+    return this.request("customer", "/review/reviews", {
       method: "POST",
       body: JSON.stringify(reviewData),
     })
   }
 
   async updateReview(reviewId: string, reviewData: { rating: number; comment: string }) {
-    return this.request("customer", `/reviews/${reviewId}`, {
+    return this.request("customer", `/review/reviews/${reviewId}`, {
       method: "PUT",
       body: JSON.stringify(reviewData),
     })
   }
 
   async deleteReview(reviewId: string) {
-    return this.request("customer", `/reviews/${reviewId}`, {
+    return this.request("customer", `/review/reviews/${reviewId}`, {
       method: "DELETE",
     })
   }
 
   async getCustomerReviews() {
-    return this.request("customer", "/customers/reviews")
+    return this.request("customer", "/review/customers/reviews")
   }
 
   async getProviderReviews(serviceProviderId: string) {
