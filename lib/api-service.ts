@@ -139,40 +139,32 @@ class ApiService {
     rating: number
     comment: string
   }) {
-    return this.request("/client/review/reviews", {
+    return this.request("/client/reviews", {
       method: "POST",
       body: JSON.stringify(reviewData),
     })
   }
 
   updateReview(reviewId: string, reviewData: { rating: number; comment: string }) {
-    return this.request(`/client/review/reviews/${reviewId}`, {
+    return this.request(`/client/reviews/${reviewId}`, {
       method: "PUT",
       body: JSON.stringify(reviewData),
     })
   }
 
   deleteReview(reviewId: string) {
-    return this.request(`/client/review/reviews/${reviewId}`, {
+    return this.request(`/client/reviews/${reviewId}`, {
       method: "DELETE",
     })
   }
 
-  getclientReviews() {
-    return this.request("/client/review/clients/reviews")
-  }
-
   getProviderReviews(serviceProviderId: string) {
-    return this.request(`/client/review/serviceProviders/${serviceProviderId}/reviews`)
+    return this.request(`/client/reviews/provider/${serviceProviderId}`)
   }
 
-
-  // review
-  getServiceProviderReviews(serviceProviderId: string) {
-    return this.request(`/client/review/serviceProviders/${serviceProviderId}/reviews`)
-  }
+  // Get client's own reviews
   getClientReviews() {
-    return this.request("/client/review/clients/reviews")
+    return this.request("/client/reviews/my")
   }
 
   // Search

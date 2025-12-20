@@ -30,7 +30,7 @@ export default function ProvidersPage() {
   const fetchProviders = async () => {
     try {
       setLoading(true)
-      const response = await apiService.getAllServiceProviders()
+      const response = await apiService.getServiceProviders()
       setProviders(response.data || [])
     } catch (error) {
       console.error("Failed to fetch providers:", error)

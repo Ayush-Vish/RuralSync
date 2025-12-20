@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +52,7 @@ const categoryIcons: Record<string, string> = {
 
 type SortOption = 'relevance' | 'price-low' | 'price-high' | 'rating' | 'distance' | 'duration';
 
-export default function SearchPage() {
+function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -848,5 +848,29 @@ function ServiceCard({
         </CardContent>
       </Card>
     </Link>
+  );
+}
+
+// Loading fallback for Suspense
+function SearchLoadingFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <Header />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+          <span className="ml-2 text-muted-foreground">Loading search...</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Default export with Suspense boundary
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<SearchLoadingFallback />}>
+      <SearchPageContent />
+    </Suspense>
   );
 }

@@ -5,37 +5,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Lock, Bell, CreditCard, MapPin, Phone, Mail } from "lucide-react"
+import { User, Lock, Bell, CreditCard } from "lucide-react"
 import { useAuthStore } from "@/store/store"
 import { AuthGuard } from "@/components/auth-gaurd"
 import { Header } from "@/components/header"
-import { apiService } from "@/lib/api-service"
 import { toast } from "sonner"
 
 export default function SettingsPage() {
-  const { user, setUser } = useAuthStore()
+  const { user, updateProfile, changePassword: changePasswordAction, isLoading } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",
     phoneNumber: "",
-    address: {
-      street: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      country: "",
-    },
-    profile: {
-      bio: "",
-    },
+    address: "",
   })
 
   const [passwordData, setPasswordData] = useState({
-    oldPassword: "",
+    currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   })
@@ -46,16 +35,7 @@ export default function SettingsPage() {
         name: user.name || "",
         email: user.email || "",
         phoneNumber: user.phoneNumber || "",
-        address: {
-          street: user.address?.street || "",
-          city: user.address?.city || "",
-          state: user.address?.state || "",
-          postalCode: user.address?.postalCode || "",
-          country: user.address?.country || "",
-        },
-        profile: {
-          bio: user.profile?.bio || "",
-        },
+        address: user.address || "",
       })
     }
   }, [user])
@@ -65,8 +45,7 @@ export default function SettingsPage() {
     setLoading(true)
 
     try {
-      const response = await apiService.updateProfile(profileData)
-      setUser(response.data)
+      await updateProfile(profileData)
       toast.success("Profile updated successfully!")
     } catch (error) {
       console.error("Failed to update profile:", error)
@@ -92,14 +71,13 @@ export default function SettingsPage() {
     setLoading(true)
 
     try {
-      await apiService.changePassword({
-        oldPassword: passwordData.oldPassword,
+      await changePasswordAction({
+        currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
-        role: "CLIENT",
       })
       toast.success("Password changed successfully!")
       setPasswordData({
-        oldPassword: "",
+        currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       })
@@ -151,7 +129,7 @@ export default function SettingsPage() {
                   <form onSubmit={handleProfileUpdate} className="space-y-6">
                     <div className="flex items-center gap-6 mb-6">
                       <Avatar className="w-24 h-24">
-                        <AvatarImage src="/placeholder.svg" />
+                        <AvatarImage src={user?.profileImage || "/placeholder.svg"} />
                         <AvatarFallback className="text-2xl">
                           {user?.name?.charAt(0).toUpperCase() || "U"}
                         </AvatarFallback>
@@ -195,101 +173,15 @@ export default function SettingsPage() {
                           placeholder="Enter your phone number"
                         />
                       </div>
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Bio</Label>
-                      <Textarea
-                        id="bio"
-                        value={profileData.profile.bio}
-                        onChange={(e) =>
-                          setProfileData({
-                            ...profileData,
-                            profile: { ...profileData.profile, bio: e.target.value },
-                          })
-                        }
-                        placeholder="Tell us about yourself"
-                        rows={4}
-                      />
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Address</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="street">Street Address</Label>
-                          <Input
-                            id="street"
-                            value={profileData.address.street}
-                            onChange={(e) =>
-                              setProfileData({
-                                ...profileData,
-                                address: { ...profileData.address, street: e.target.value },
-                              })
-                            }
-                            placeholder="Enter street address"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="city">City</Label>
-                          <Input
-                            id="city"
-                            value={profileData.address.city}
-                            onChange={(e) =>
-                              setProfileData({
-                                ...profileData,
-                                address: { ...profileData.address, city: e.target.value },
-                              })
-                            }
-                            placeholder="Enter city"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="state">State</Label>
-                          <Input
-                            id="state"
-                            value={profileData.address.state}
-                            onChange={(e) =>
-                              setProfileData({
-                                ...profileData,
-                                address: { ...profileData.address, state: e.target.value },
-                              })
-                            }
-                            placeholder="Enter state"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="postalCode">Postal Code</Label>
-                          <Input
-                            id="postalCode"
-                            value={profileData.address.postalCode}
-                            onChange={(e) =>
-                              setProfileData({
-                                ...profileData,
-                                address: { ...profileData.address, postalCode: e.target.value },
-                              })
-                            }
-                            placeholder="Enter postal code"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="country">Country</Label>
-                          <Input
-                            id="country"
-                            value={profileData.address.country}
-                            onChange={(e) =>
-                              setProfileData({
-                                ...profileData,
-                                address: { ...profileData.address, country: e.target.value },
-                              })
-                            }
-                            placeholder="Enter country"
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Address</Label>
+                        <Input
+                          id="address"
+                          value={profileData.address}
+                          onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                          placeholder="Enter your address"
+                        />
                       </div>
                     </div>
 
@@ -297,8 +189,8 @@ export default function SettingsPage() {
                       <Button type="button" variant="outline">
                         Cancel
                       </Button>
-                      <Button type="submit" disabled={loading}>
-                        {loading ? "Saving..." : "Save Changes"}
+                      <Button type="submit" disabled={loading || isLoading}>
+                        {loading || isLoading ? "Saving..." : "Save Changes"}
                       </Button>
                     </div>
                   </form>
@@ -315,12 +207,12 @@ export default function SettingsPage() {
                 <CardContent>
                   <form onSubmit={handlePasswordChange} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="oldPassword">Current Password</Label>
+                      <Label htmlFor="currentPassword">Current Password</Label>
                       <Input
-                        id="oldPassword"
+                        id="currentPassword"
                         type="password"
-                        value={passwordData.oldPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, oldPassword: e.target.value })}
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                         placeholder="Enter current password"
                       />
                     </div>
@@ -351,8 +243,8 @@ export default function SettingsPage() {
                       <Button type="button" variant="outline">
                         Cancel
                       </Button>
-                      <Button type="submit" disabled={loading}>
-                        {loading ? "Changing..." : "Change Password"}
+                      <Button type="submit" disabled={loading || isLoading}>
+                        {loading || isLoading ? "Changing..." : "Change Password"}
                       </Button>
                     </div>
                   </form>

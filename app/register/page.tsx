@@ -46,7 +46,6 @@ export default function RegisterPage() {
         password: formData.password,
         phone: formData.phone,
         address: formData.address,
-        role: "CLIENT",
       })
       router.push("/login?message=Registration successful. Please sign in.")
     } catch (error) {
