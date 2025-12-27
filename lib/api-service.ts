@@ -1,7 +1,7 @@
 const API_BASE =
   process.env.NODE_ENV === "production"
     ? ""
-    : "http://localhost:5000/api";
+    : "http://localhost:5000";
 
 class ApiService {
   private async request(
@@ -39,7 +39,7 @@ class ApiService {
 
   // -------------------- Auth --------------------
   login(email: string, password: string) {
-    return this.request("/auth/login", {
+    return this.request("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password, role: "CLIENT" }),
     })
@@ -52,65 +52,65 @@ class ApiService {
     phone: string
     address: string
   }) {
-    return this.request("/auth/register", {
+    return this.request("/api/auth/register", {
       method: "POST",
       body: JSON.stringify({ ...userData, role: "CLIENT" }),
     })
   }
 
   getUserDetails() {
-    return this.request("/auth/user-detail/client")
+    return this.request("/api/auth/user-detail/client")
   }
 
   // -------------------- Services --------------------
   getServices() {
-    return this.request("/client/services")
+    return this.request("/api/client/services")
   }
 
   getServiceById(serviceId: string) {
-    return this.request(`/client/services/${serviceId}`)
+    return this.request(`/api/client/services/${serviceId}`)
   }
 
   getServiceProviders() {
-    return this.request("/client/services/providers")
+    return this.request("/api/client/services/providers")
   }
 
   // -------------------- Bookings --------------------
   createBooking(bookingData: any) {
-    return this.request("/client/bookings", {
+    return this.request("/api/client/bookings", {
       method: "POST",
       body: JSON.stringify({ ...bookingData, role: "CLIENT" }),
     })
   }
 
   getUserBookings() {
-    return this.request("/client/bookings")
+    return this.request("/api/client/bookings")
   }
 
   getBookingsByClientId(clientId: string) {
-    return this.request(`/client/bookings/${clientId}`)
+    return this.request(`/api/client/bookings/${clientId}`)
   }
 
   checkAvailability(serviceId: string, date: string) {
     const query = new URLSearchParams()
     query.set("serviceId", serviceId)
     query.set("date", date)
-    return this.request(`/client/bookings/availability?${query.toString()}`)
+    return this.request(`/api/client/bookings/availability?${query.toString()}`)
   }
 
   cancelBooking(bookingId: string) {
-    return this.request(`/client/bookings/${bookingId}`, {
+    return this.request(`/api/client/bookings/${bookingId}`, {
       method: "DELETE",
     })
   }
 
   // -------------------- Profile --------------------
   getclientProfile() {
-    return this.request("/client/profile")
+    return this.request("/api/client/profile")
   }
 
   updateClientProfile(profileData: any) {
-    return this.request("/client/profile-update", {
+    return this.request("/api/client/profile-update", {
       method: "PUT",
       body: JSON.stringify(profileData),
     })
@@ -120,7 +120,7 @@ class ApiService {
     currentPassword: string
     newPassword: string
   }) {
-    return this.request("/client/password", {
+    return this.request("/api/client/password", {
       method: "PATCH",
       body: JSON.stringify(passwordData),
     })
@@ -130,7 +130,7 @@ class ApiService {
     const formData = new FormData()
     formData.append("image", imageFile)
 
-    return this.request("/client/profile/image", {
+    return this.request("/api/client/profile/image", {
       method: "POST",
       body: formData,
     })
@@ -143,21 +143,21 @@ class ApiService {
     rating: number
     comment: string
   }) {
-    return this.request("/client/reviews", {
+    return this.request("/api/client/reviews", {
       method: "POST",
       body: JSON.stringify(reviewData),
     })
   }
 
   updateReview(reviewId: string, reviewData: { rating: number; comment: string }) {
-    return this.request(`/client/reviews/${reviewId}`, {
+    return this.request(`/api/client/reviews/${reviewId}`, {
       method: "PUT",
       body: JSON.stringify(reviewData),
     })
   }
 
   deleteReview(reviewId: string) {
-    return this.request(`/client/reviews/${reviewId}`, {
+    return this.request(`/api/client/reviews/${reviewId}`, {
       method: "DELETE",
     })
   }
@@ -168,7 +168,7 @@ class ApiService {
 
   // Get client's own reviews
   getClientReviews() {
-    return this.request("/client/reviews/my")
+    return this.request("/api/client/reviews/my")
   }
 
   // Search
@@ -201,12 +201,12 @@ class ApiService {
     if (params.limit !== undefined) query.set("limit", params.limit.toString());
     if (params.locationText) query.set("locationText", params.locationText);
 
-    return this.request(`/client/search?${query.toString()}`);
+    return this.request(`/api/client/search?${query.toString()}`);
   }
 
   // Get all unique categories for filter
   getSearchCategories() {
-    return this.request("/client/search/categories");
+    return this.request("/api/client/search/categories");
   }
 
   // Get search suggestions/autocomplete
@@ -214,7 +214,7 @@ class ApiService {
     const query = new URLSearchParams();
     query.set("q", q);
     if (limit) query.set("limit", limit.toString());
-    return this.request(`/client/search/suggestions?${query.toString()}`);
+    return this.request(`/api/client/search/suggestions?${query.toString()}`);
   }
 
   // Advanced search with pagination info
@@ -245,7 +245,7 @@ class ApiService {
     if (params.page !== undefined) query.set("page", params.page.toString());
     if (params.limit !== undefined) query.set("limit", params.limit.toString());
 
-    return this.request(`/client/search/advanced?${query.toString()}`);
+    return this.request(`/api/client/search/advanced?${query.toString()}`);
   }
 }
 export const apiService = new ApiService()
