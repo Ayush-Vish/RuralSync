@@ -75,6 +75,10 @@ class ApiService {
     return this.request("/api/client/services/providers")
   }
 
+  getServiceProviderById(providerId: string) {
+    return this.request(`/api/client/services/providers/${providerId}`)
+  }
+
   // -------------------- Bookings --------------------
   createBooking(bookingData: any) {
     return this.request("/api/client/bookings", {

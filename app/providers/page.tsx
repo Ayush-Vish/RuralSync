@@ -157,8 +157,13 @@ export default function ProvidersPage() {
                       </div>
                     </div>
                   </div>
-                  {provider.rating !== undefined && provider.rating > 0 && (
-                    <div className="mt-2">{renderStars(provider.rating)}</div>
+                  {(provider.serviceCompany?.rating ?? provider.rating) !== undefined && (provider.serviceCompany?.rating ?? provider.rating)! > 0 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      {renderStars(provider.serviceCompany?.rating ?? provider.rating ?? 0)}
+                      {provider.serviceCompany?.reviewCount && (
+                        <span className="text-xs text-gray-500">({provider.serviceCompany.reviewCount} reviews)</span>
+                      )}
+                    </div>
                   )}
                 </CardHeader>
                 <CardContent>

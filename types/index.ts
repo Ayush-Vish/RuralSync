@@ -60,14 +60,51 @@ export interface ServiceProvider {
   phone?: string
   address?: string
   rating?: number
-  serviceCompany?: {
-    _id: string
-    name: string
-    categories: string[]
-    description?: string
-    images?: string[]
-    logo?: string
+  location?: GeoLocation
+  services?: string[]
+  service?: ServiceBasic[]
+  serviceCompany?: ServiceCompanyDetail
+}
+
+export interface ServiceCompanyDetail {
+  _id: string
+  name: string
+  categories: string[]
+  description?: string
+  images?: string[]
+  logo?: string
+  rating?: number
+  reviewCount?: number
+  location?: GeoLocation
+  address?: string
+  phone?: string
+  website?: string
+  businessHours?: BusinessHours[]
+  socialMedia?: {
+    facebook?: string
+    twitter?: string
+    instagram?: string
+    linkedin?: string
   }
+}
+
+export interface BusinessHours {
+  day: string
+  open: string
+  close: string
+  isClosed?: boolean
+}
+
+export interface ServiceBasic {
+  _id: string
+  name: string
+  description?: string
+  price?: number
+  duration?: number
+  images?: string[]
+  category?: string
+  rating?: number
+  reviewCount?: number
 }
 
 // ==========================================
