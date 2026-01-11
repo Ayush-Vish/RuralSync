@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -11,13 +11,37 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { User, Settings, LogOut, Calendar, Star, Search, Menu, X, ChevronRight } from "lucide-react"
+import { User, Settings, LogOut, Calendar, Star, Search, Menu, X, ChevronRight, MapPin, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/store/store"
+import { usePathname } from "next/navigation"
+import { getStoredCity, storeDetectedCity } from "@/lib/geocoding"
+import { TARGET_CITIES, CITY_DISPLAY_NAMES } from "@/lib/seo-constants"
 
 export function Header() {
   const { user, isLoggedIn, isLoading, logout } = useAuthStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+  const [currentCity, setCurrentCity] = useState<string | null>(null)
+
+  // Extract city from URL path
+  useEffect(() => {
+    const pathParts = pathname.split("/").filter(Boolean)
+    if (pathParts.length > 0 && TARGET_CITIES.includes(pathParts[0].toLowerCase())) {
+      setCurrentCity(pathParts[0].toLowerCase())
+    } else {
+      // Check localStorage
+      const storedCity = getStoredCity()
+      setCurrentCity(storedCity)
+    }
+  }, [pathname])
+
+  const handleCityChange = (city: string) => {
+    storeDetectedCity(city)
+    setCurrentCity(city)
+    // Redirect to the city page
+    window.location.href = `/${city}`
+  }
 
   const handleLogout = () => {
     logout()
@@ -47,8 +71,34 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
+            {/* City Selector */}
+            {currentCity && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="px-3 py-2 text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all font-medium flex items-center gap-1">
+                    <MapPin className="w-4 h-4 text-green-600" />
+                    {CITY_DISPLAY_NAMES[currentCity] || currentCity}
+                    <ChevronDown className="w-3 h-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Select City</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {TARGET_CITIES.map((city) => (
+                    <DropdownMenuItem 
+                      key={city}
+                      onClick={() => handleCityChange(city)}
+                      className={`cursor-pointer ${currentCity === city ? 'bg-green-50 text-green-700' : ''}`}
+                    >
+                      <MapPin className="w-4 h-4 mr-2" />
+                      {CITY_DISPLAY_NAMES[city]}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Link 
-              href="/search" 
+              href={currentCity ? `/${currentCity}/search` : "/search"}
               className="px-4 py-2 text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all font-medium flex items-center gap-2"
             >
               <Search className="w-4 h-4" />

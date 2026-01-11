@@ -87,12 +87,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  // City-only pages (optional - for future implementation)
+  // City landing pages (high priority for local SEO)
   const cityPages: MetadataRoute.Sitemap = TARGET_CITIES.map((city) => ({
-    url: `${BASE_URL}/search?locationText=${city}`,
+    url: `${BASE_URL}/${city}`,
     lastModified: currentDate,
-    changeFrequency: "weekly",
-    priority: 0.7,
+    changeFrequency: "daily",
+    priority: 0.9,
+  }));
+
+  // City search pages
+  const citySearchPages: MetadataRoute.Sitemap = TARGET_CITIES.map((city) => ({
+    url: `${BASE_URL}/${city}/search`,
+    lastModified: currentDate,
+    changeFrequency: "daily",
+    priority: 0.8,
   }));
 
   // Category pages
@@ -103,5 +111,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...cityServicePages, ...cityPages, ...categoryPages];
+  return [...staticPages, ...cityPages, ...citySearchPages, ...cityServicePages, ...categoryPages];
 }

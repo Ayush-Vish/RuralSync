@@ -79,3 +79,34 @@ export const SERVICE_API_NAMES: Record<string, string> = {
   beauty: "Beauty",
   fitness: "Fitness",
 };
+
+// Helper functions
+export function isValidCity(city: string): boolean {
+  return TARGET_CITIES.includes(city.toLowerCase());
+}
+
+export function isValidService(service: string): boolean {
+  return SERVICE_CATEGORIES.includes(service.toLowerCase());
+}
+
+export function getCityDisplayName(city: string): string {
+  return CITY_DISPLAY_NAMES[city.toLowerCase()] || formatCityName(city);
+}
+
+export function getServiceDisplayName(service: string): string {
+  return SERVICE_DISPLAY_NAMES[service.toLowerCase()] || formatServiceName(service);
+}
+
+function formatCityName(city: string): string {
+  return city
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function formatServiceName(service: string): string {
+  return service
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
