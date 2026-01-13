@@ -37,6 +37,8 @@ import { Header } from "@/components/header";
 import { apiService } from "@/lib/api-service";
 import type { Service } from "@/types";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useLocationStore } from "@/store/location-store";
+import { LocationSearchInput } from "@/components/location-search-input";
 
 // Category icons mapping
 const categoryIcons: Record<string, string> = {
@@ -55,6 +57,16 @@ type SortOption = 'relevance' | 'price-low' | 'price-high' | 'rating' | 'distanc
 function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // Global location store
+  const { 
+    latitude: globalLat, 
+    longitude: globalLng, 
+    displayName: globalDisplayName,
+    city: globalCity,
+    setLocation: setGlobalLocation,
+    clearLocation 
+  } = useLocationStore();
 
   // State
   const [services, setServices] = useState<Service[]>([]);
@@ -72,11 +84,24 @@ function SearchPageContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [isLocating, setIsLocating] = useState(false);
-  const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(
-    searchParams.get("lat") && searchParams.get("lng")
-      ? { lat: Number(searchParams.get("lat")), lng: Number(searchParams.get("lng")) }
-      : null
-  );
+  
+  // Initialize coords from URL params, then global store, or null
+  const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(() => {
+    const urlLat = searchParams.get("lat");
+    const urlLng = searchParams.get("lng");
+    if (urlLat && urlLng) {
+      return { lat: Number(urlLat), lng: Number(urlLng) };
+    }
+    return null;
+  });
+  
+  // Sync with global location store on mount
+  useEffect(() => {
+    if (!coords && globalLat && globalLng) {
+      setCoords({ lat: globalLat, lng: globalLng });
+      setLocation(globalDisplayName || globalCity || "Current Location");
+    }
+  }, []);
   
   // Categories from backend
   const [categories, setCategories] = useState<string[]>([]);
@@ -167,10 +192,18 @@ function SearchPageContent() {
     setIsLocating(true);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         setCoords({ lat: latitude, lng: longitude });
         setLocation("Current Location (GPS)");
+        
+        // Update global store
+        setGlobalLocation({
+          latitude,
+          longitude,
+          displayName: "Current Location (GPS)",
+        });
+        
         setIsLocating(false);
       },
       (error) => {
@@ -185,6 +218,26 @@ function SearchPageContent() {
   const handleClearLocation = () => {
     setCoords(null);
     setLocation("");
+    clearLocation();
+  };
+  
+  // Handle location selection from search input
+  const handleLocationSelect = (selectedLocation: {
+    lat: number;
+    lng: number;
+    city: string;
+    displayName: string;
+  }) => {
+    setCoords({ lat: selectedLocation.lat, lng: selectedLocation.lng });
+    setLocation(selectedLocation.displayName);
+    
+    // Update global store
+    setGlobalLocation({
+      latitude: selectedLocation.lat,
+      longitude: selectedLocation.lng,
+      city: selectedLocation.city,
+      displayName: selectedLocation.displayName,
+    });
   };
 
   useEffect(() => {
@@ -290,41 +343,15 @@ function SearchPageContent() {
               </div>
 
               {/* Location Input */}
-              <div className="lg:w-80 relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Enter location or use GPS"
+              <div className="lg:w-96">
+                <LocationSearchInput
                   value={location}
-                  onChange={(e) => {
-                    setLocation(e.target.value);
-                    // Clear coords if manually typing
-                    if (coords) setCoords(null);
-                  }}
-                  className="pl-12 pr-20 h-12 text-base bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                  placeholder="Search location or use GPS"
+                  onLocationSelect={handleLocationSelect}
+                  onClear={handleClearLocation}
+                  showGpsButton={true}
+                  compact={true}
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-1">
-                  {coords && (
-                    <button
-                      type="button"
-                      onClick={handleClearLocation}
-                      className="p-1.5 rounded-md hover:bg-slate-200 transition-colors"
-                    >
-                      <X className="h-4 w-4 text-slate-500" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleGetLocation}
-                    disabled={isLocating}
-                    className="p-1.5 rounded-md hover:bg-slate-200 transition-colors"
-                  >
-                    {isLocating ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-green-600" />
-                    ) : (
-                      <Navigation className={`h-4 w-4 ${coords ? 'text-green-600' : 'text-slate-500'}`} />
-                    )}
-                  </button>
-                </div>
               </div>
 
               {/* Search Button */}

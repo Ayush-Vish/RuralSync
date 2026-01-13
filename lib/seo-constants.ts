@@ -110,3 +110,19 @@ function formatServiceName(service: string): string {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 }
+
+// Get city slug from city name (e.g. "Gwalior" -> "gwalior")
+export function getCitySlug(cityName: string): string {
+  const slug = cityName.toLowerCase().trim().replace(/\s+/g, "-");
+  // If it's a known city, return that slug; otherwise return formatted slug
+  if (TARGET_CITIES.includes(slug)) {
+    return slug;
+  }
+  // Check if any TARGET_CITY matches the display name
+  for (const [key, displayName] of Object.entries(CITY_DISPLAY_NAMES)) {
+    if (displayName.toLowerCase() === cityName.toLowerCase()) {
+      return key;
+    }
+  }
+  return slug;
+}

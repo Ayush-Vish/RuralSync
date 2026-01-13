@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -11,30 +11,43 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { User, Settings, LogOut, Calendar, Star, Search, Menu, X, ChevronRight, MapPin, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import { useAuthStore } from "@/store/store"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { getStoredCity, storeDetectedCity } from "@/lib/geocoding"
-import { TARGET_CITIES, CITY_DISPLAY_NAMES } from "@/lib/seo-constants"
+import { TARGET_CITIES, CITY_DISPLAY_NAMES, getCitySlug } from "@/lib/seo-constants"
+import { LocationSearchInput } from "@/components/location-search-input"
+import { useLocationStore } from "@/store/location-store"
 
 export function Header() {
   const { user, isLoggedIn, isLoading, logout } = useAuthStore()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [locationPopoverOpen, setLocationPopoverOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const [currentCity, setCurrentCity] = useState<string | null>(null)
+  const { displayName: storedLocation, city: storedCity, setLocation } = useLocationStore()
 
-  // Extract city from URL path
+  // Extract city from URL path or use global location store
   useEffect(() => {
     const pathParts = pathname.split("/").filter(Boolean)
     if (pathParts.length > 0 && TARGET_CITIES.includes(pathParts[0].toLowerCase())) {
       setCurrentCity(pathParts[0].toLowerCase())
+    } else if (storedCity) {
+      const slug = getCitySlug(storedCity)
+      setCurrentCity(TARGET_CITIES.includes(slug) ? slug : null)
     } else {
       // Check localStorage
-      const storedCity = getStoredCity()
-      setCurrentCity(storedCity)
+      const storedCityFromStorage = getStoredCity()
+      setCurrentCity(storedCityFromStorage)
     }
-  }, [pathname])
+  }, [pathname, storedCity])
 
   const handleCityChange = (city: string) => {
     storeDetectedCity(city)
@@ -42,6 +55,34 @@ export function Header() {
     // Redirect to the city page
     window.location.href = `/${city}`
   }
+
+  const handleLocationSelect = useCallback((location: {
+    lat: number;
+    lng: number;
+    city: string;
+    displayName: string;
+  }) => {
+    // Update global location store
+    setLocation({
+      latitude: location.lat,
+      longitude: location.lng,
+      city: location.city,
+      displayName: location.displayName,
+    })
+    
+    // Get city slug and redirect
+    const citySlug = getCitySlug(location.city)
+    storeDetectedCity(citySlug)
+    setCurrentCity(TARGET_CITIES.includes(citySlug) ? citySlug : null)
+    setLocationPopoverOpen(false)
+    
+    // Navigate to search with coordinates
+    if (TARGET_CITIES.includes(citySlug)) {
+      router.push(`/${citySlug}/search`)
+    } else {
+      router.push(`/search?lat=${location.lat}&lng=${location.lng}&city=${encodeURIComponent(location.city)}`)
+    }
+  }, [setLocation, router])
 
   const handleLogout = () => {
     logout()
@@ -71,32 +112,56 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
-            {/* City Selector */}
-            {currentCity && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="px-3 py-2 text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all font-medium flex items-center gap-1">
-                    <MapPin className="w-4 h-4 text-green-600" />
-                    {CITY_DISPLAY_NAMES[currentCity] || currentCity}
-                    <ChevronDown className="w-3 h-3 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuLabel className="text-xs text-muted-foreground">Select City</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {TARGET_CITIES.map((city) => (
-                    <DropdownMenuItem 
-                      key={city}
-                      onClick={() => handleCityChange(city)}
-                      className={`cursor-pointer ${currentCity === city ? 'bg-green-50 text-green-700' : ''}`}
-                    >
-                      <MapPin className="w-4 h-4 mr-2" />
-                      {CITY_DISPLAY_NAMES[city]}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            {/* Location Selector with Search */}
+            <Popover open={locationPopoverOpen} onOpenChange={setLocationPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="px-3 py-2 text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all font-medium flex items-center gap-1"
+                >
+                  <MapPin className="w-4 h-4 text-green-600" />
+                  <span className="max-w-[120px] truncate">
+                    {storedLocation || (currentCity ? CITY_DISPLAY_NAMES[currentCity] : "Select Location")}
+                  </span>
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-96 p-4" align="start">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium text-slate-900 mb-1">Your Location</h4>
+                    <p className="text-sm text-muted-foreground">Search for any location or use GPS</p>
+                  </div>
+                  <LocationSearchInput
+                    value={storedLocation || ""}
+                    placeholder="Search any location..."
+                    onLocationSelect={handleLocationSelect}
+                    onClear={() => {
+                      setCurrentCity(null)
+                    }}
+                    showGpsButton={true}
+                    compact={true}
+                  />
+                  {/* Popular Cities */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Popular Cities</p>
+                    <div className="flex flex-wrap gap-2">
+                      {TARGET_CITIES.slice(0, 6).map((city) => (
+                        <Button
+                          key={city}
+                          variant={currentCity === city ? "default" : "outline"}
+                          size="sm"
+                          className={currentCity === city ? "bg-green-600 hover:bg-green-700" : ""}
+                          onClick={() => handleCityChange(city)}
+                        >
+                          {CITY_DISPLAY_NAMES[city]}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Link 
               href={currentCity ? `/${currentCity}/search` : "/search"}
               className="px-4 py-2 text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all font-medium flex items-center gap-2"

@@ -34,9 +34,11 @@ import { Header } from "@/components/header";
 import { apiService } from "@/lib/api-service";
 import type { Service } from "@/types";
 import { useDebounce } from "@/hooks/use-debounce";
-import { CITY_DISPLAY_NAMES, SERVICE_CATEGORIES, SERVICE_DISPLAY_NAMES } from "@/lib/seo-constants";
+import { CITY_DISPLAY_NAMES, SERVICE_CATEGORIES, SERVICE_DISPLAY_NAMES, getCitySlug } from "@/lib/seo-constants";
 import { ServiceCard, categoryIcons } from "@/components/service-card";
 import { forwardGeocode } from "@/lib/geocoding";
+import { useLocationStore } from "@/store/location-store";
+import { LocationSearchInput } from "@/components/location-search-input";
 
 type SortOption = "relevance" | "price-low" | "price-high" | "rating" | "distance" | "duration";
 
@@ -47,6 +49,9 @@ interface SearchPageContentProps {
 function SearchPageContent({ city }: SearchPageContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // Global location store
+  const { setLocation: setGlobalLocation } = useLocationStore();
 
   const cityName = CITY_DISPLAY_NAMES[city.toLowerCase()] || formatCityName(city);
 
@@ -54,6 +59,7 @@ function SearchPageContent({ city }: SearchPageContentProps) {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [locationDisplay, setLocationDisplay] = useState(cityName);
   const [selectedCategory, setSelectedCategory] = useState(
     searchParams.get("category") || "all"
   );
@@ -85,16 +91,49 @@ function SearchPageContent({ city }: SearchPageContentProps) {
   // Debounced search query for suggestions
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  // Get city coordinates on mount
+  // Get city coordinates on mount and sync with global store
   useEffect(() => {
     const getCityCoords = async () => {
       const result = await forwardGeocode(cityName);
       if (result) {
         setCoords(result);
+        // Update global location store with this city
+        setGlobalLocation({
+          latitude: result.lat,
+          longitude: result.lng,
+          city: cityName,
+          displayName: cityName,
+        });
       }
     };
     getCityCoords();
-  }, [cityName]);
+  }, [cityName, setGlobalLocation]);
+  
+  // Handle location change - redirect to new city or generic search
+  const handleLocationSelect = (selectedLocation: {
+    lat: number;
+    lng: number;
+    city: string;
+    displayName: string;
+  }) => {
+    // Update global store
+    setGlobalLocation({
+      latitude: selectedLocation.lat,
+      longitude: selectedLocation.lng,
+      city: selectedLocation.city,
+      displayName: selectedLocation.displayName,
+    });
+    
+    const citySlug = getCitySlug(selectedLocation.city);
+    
+    // If it's a known city, redirect to that city's search page
+    if (CITY_DISPLAY_NAMES[citySlug]) {
+      router.push(`/${citySlug}/search`);
+    } else {
+      // Otherwise redirect to generic search with coordinates
+      router.push(`/search?lat=${selectedLocation.lat}&lng=${selectedLocation.lng}&city=${encodeURIComponent(selectedLocation.city)}`);
+    }
+  };
 
   // Fetch categories on mount
   useEffect(() => {
@@ -308,7 +347,17 @@ function SearchPageContent({ city }: SearchPageContentProps) {
                   ))}
                 </SelectContent>
               </Select>
-
+              
+              {/* Location Input - Change City */}
+              <div className="lg:w-72">
+                <LocationSearchInput
+                  value={locationDisplay}
+                  placeholder="Change location..."
+                  onLocationSelect={handleLocationSelect}
+                  showGpsButton={true}
+                  compact={true}
+                />
+              </div>
               {/* Sort Select */}
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
                 <SelectTrigger className="lg:w-40 h-12 bg-slate-50 border-slate-200">
