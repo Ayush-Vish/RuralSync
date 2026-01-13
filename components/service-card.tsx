@@ -50,10 +50,18 @@ export function ServiceCard({ service, viewMode = "grid" }: ServiceCardProps) {
         <Card className="overflow-hidden hover:shadow-md transition-all hover:border-green-200 group">
           <div className="flex">
             {/* Image */}
-            <div className="w-48 h-36 flex-shrink-0 bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center">
-              <span className="text-5xl">
-                {categoryIcons[service.category] || "📦"}
-              </span>
+            <div className="w-48 h-36 flex-shrink-0 bg-gradient-to-br from-green-100 to-emerald-50 flex items-center justify-center relative overflow-hidden">
+              {service.images && service.images.length > 0 ? (
+                <img
+                  src={service.images[0]}
+                  alt={service.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              ) : (
+                <span className="text-5xl">
+                  {categoryIcons[service.category] || "📦"}
+                </span>
+              )}
             </div>
 
             {/* Content */}
@@ -121,10 +129,18 @@ export function ServiceCard({ service, viewMode = "grid" }: ServiceCardProps) {
     <Link href={`/services/${service._id}`}>
       <Card className="overflow-hidden hover:shadow-lg transition-all hover:border-green-200 group h-full">
         {/* Image Header */}
-        <div className="h-40 bg-gradient-to-br from-green-100 via-emerald-50 to-teal-100 flex items-center justify-center relative">
-          <span className="text-6xl">
-            {categoryIcons[service.category] || "📦"}
-          </span>
+        <div className="h-40 bg-gradient-to-br from-green-100 via-emerald-50 to-teal-100 flex items-center justify-center relative overflow-hidden">
+          {service.images && service.images.length > 0 ? (
+            <img
+              src={service.images[0]}
+              alt={service.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <span className="text-6xl">
+              {categoryIcons[service.category] || "📦"}
+            </span>
+          )}
           <Badge className="absolute top-3 right-3 bg-white/90 text-slate-700 hover:bg-white">
             {service.category}
           </Badge>

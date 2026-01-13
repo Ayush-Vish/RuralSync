@@ -157,6 +157,7 @@ export interface Service {
   address?: string
   rating?: number
   tags?: string[]
+  images?: string[]
   // Fields added by search API
   distance?: number // in meters
   distanceInKm?: number | null // in kilometers (rounded)
