@@ -14,11 +14,11 @@ import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-// import { useToast } from "@/components/ui/use-toast" // Assumed toast exists or use sonner
 import { toast } from "sonner"
 import { Header } from "@/components/header"
 import { apiService } from "@/lib/api-service"
 import { useAuthStore } from "@/store/store"
+import { useLocationStore } from "@/store/location-store"
 
 const steps = [
   { id: 1, name: "Date & Time" },
@@ -31,6 +31,7 @@ export default function BookingPage() {
   const params = useParams()
   const router = useRouter()
   const { user, isLoggedIn } = useAuthStore()
+  const { latitude, longitude, displayName, city } = useLocationStore()
 
   const [step, setStep] = useState(1)
   const [date, setDate] = useState<Date | undefined>(new Date())
@@ -38,9 +39,18 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(true)
   const [service, setService] = useState<any>(null)
   const [bookingNotes, setBookingNotes] = useState("")
-  const [address, setAddress] = useState("My Farm - North Field")
+  const [address, setAddress] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [bookedSlots, setBookedSlots] = useState<string[]>([])
+
+  // Initialize address from location store
+  useEffect(() => {
+    if (displayName) {
+      setAddress(displayName)
+    } else if (city) {
+      setAddress(city)
+    }
+  }, [displayName, city])
 
   // Mock slots for now - in real app, fetch from API based on date
   const timeSlots = [
@@ -109,6 +119,11 @@ export default function BookingPage() {
     try {
       setSubmitting(true)
 
+      // Use location from store or default to service location
+      const bookingLocation = latitude && longitude 
+        ? { type: "Point", coordinates: [longitude, latitude] }
+        : service.location || { type: "Point", coordinates: [0, 0] }
+
       const payload = {
         services: [
           {
@@ -116,8 +131,8 @@ export default function BookingPage() {
             bookingDate: format(date!, "yyyy-MM-dd"),
             bookingTime: selectedSlot,
             extraTasks: [],
-            address: address,
-            location: { type: "Point", coordinates: [0, 0] },
+            address: address || displayName || city || "Customer Address",
+            location: bookingLocation,
             notes: bookingNotes
           }
         ]
@@ -204,7 +219,7 @@ export default function BookingPage() {
                             selected={date}
                             onSelect={setDate}
                             className="rounded-md border shadow-sm mx-auto"
-                            disabled={(date) => date < new Date()}
+                            disabled={{ before: new Date() }}
                           />
                         </div>
                         <div className="flex-1">
@@ -307,7 +322,7 @@ export default function BookingPage() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-slate-500">Location</span>
-                          <span className="font-medium">My Farm - North Field</span>
+                          <span className="font-medium truncate max-w-[200px]">{address || "Not specified"}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between text-lg font-bold text-slate-900">
