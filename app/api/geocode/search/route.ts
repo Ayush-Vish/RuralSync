@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -12,11 +13,46 @@ export async function GET(req: Request) {
     );
   }
 
+  // Normalize query to improve cache hits
+  const normalizedQ = q.trim().toLowerCase();
+  const normalizedLimit = Number(limit) || 5;
+
+  const cacheKey = `search:${normalizedQ}:${normalizedLimit}`;
+
   try {
+    // ================================
+    // 1️⃣ Check cache
+    // ================================
+    const cached = await kv.get(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    // ================================
+    // 2️⃣ Simple rate limit (per IP)
+    // ================================
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+
+    const rateKey = `rate:search:${ip}`;
+    const count = (await kv.get<number>(rateKey)) || 0;
+
+    if (count > 60) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429 }
+      );
+    }
+
+    await kv.set(rateKey, count + 1, { ex: 60 }); // 60 per minute
+
+    // ================================
+    // 3️⃣ Call OSM
+    // ================================
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-        q
-      )}&limit=${limit}&addressdetails=1&countrycodes=in`,
+        normalizedQ
+      )}&limit=${normalizedLimit}&addressdetails=1&countrycodes=in`,
       {
         headers: {
           "User-Agent": "RuralSync/1.0 (https://ruralsync.vercel.app)",
@@ -30,7 +66,9 @@ export async function GET(req: Request) {
 
     const data = await response.json();
 
-    // Map to cleaner format with all required fields
+    // ================================
+    // 4️⃣ Map to cleaner format
+    // ================================
     const results = data.map((item: any) => ({
       placeId: item.place_id?.toString() || "",
       displayName: item.display_name,
@@ -48,6 +86,11 @@ export async function GET(req: Request) {
       lng: parseFloat(item.lon),
       type: item.type || "",
     }));
+
+    // ================================
+    // 5️⃣ Save to cache (7 days)
+    // ================================
+    await kv.set(cacheKey, results, { ex: 60 * 60 * 24 * 7 });
 
     return NextResponse.json(results);
   } catch (error) {

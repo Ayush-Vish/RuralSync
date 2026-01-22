@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { kv } from "@vercel/kv";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -12,12 +13,47 @@ export async function GET(req: Request) {
     );
   }
 
+  // Normalize to reduce cache duplication
+  const latNum = Number.parseFloat(lat).toFixed(5);
+  const lngNum = Number.parseFloat(lng).toFixed(5);
+
+  const cacheKey = `reverse:${latNum}:${lngNum}`;
+
   try {
+    // ================================
+    // 1️⃣ Check cache
+    // ================================
+    const cached = await kv.get(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
+    // ================================
+    // 2️⃣ Simple rate limit (per IP)
+    // ================================
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+
+    const rateKey = `rate:reverse:${ip}`;
+    const count = (await kv.get<number>(rateKey)) || 0;
+
+    if (count > 30) {
+      return NextResponse.json(
+        { error: "Too many requests" },
+        { status: 429 }
+      );
+    }
+
+    await kv.set(rateKey, count + 1, { ex: 60 }); // 30 per minute
+
+    // ================================
+    // 3️⃣ Call OSM
+    // ================================
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latNum}&lon=${lngNum}&addressdetails=1`,
       {
         headers: {
-          "User-Agent": "RuralSync/1.0",
+          "User-Agent": "RuralSync/1.0 (https://ruralsync.vercel.app)",
         },
       }
     );
@@ -28,7 +64,9 @@ export async function GET(req: Request) {
 
     const data = await response.json();
 
-    // Extract relevant info
+    // ================================
+    // 4️⃣ Extract relevant info
+    // ================================
     const result = {
       displayName: data.display_name,
       city:
@@ -40,9 +78,14 @@ export async function GET(req: Request) {
       state: data.address?.state || null,
       country: data.address?.country || null,
       postcode: data.address?.postcode || null,
-      lat: parseFloat(lat),
-      lng: parseFloat(lng),
+      lat: Number(latNum),
+      lng: Number(lngNum),
     };
+
+    // ================================
+    // 5️⃣ Save to cache (30 days)
+    // ================================
+    await kv.set(cacheKey, result, { ex: 60 * 60 * 24 * 30 });
 
     return NextResponse.json(result);
   } catch (error) {
