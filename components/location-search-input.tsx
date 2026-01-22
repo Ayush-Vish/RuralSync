@@ -107,7 +107,6 @@ export function LocationSearchInput({
       try {
         const places = await searchPlaces(debouncedQuery, {
           limit: 6,
-          countryCode: "in", // Focus on India
         });
         setResults(places);
       } catch (error) {
@@ -182,9 +181,23 @@ export function LocationSearchInput({
         });
       }
       setIsOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error("GPS detection failed:", error);
-      alert("Unable to detect your location. Please enable location services.");
+      
+      // Show specific error messages based on error type
+      let errorMessage = "Unable to detect your location.";
+      
+      if (error?.code === 1) {
+        errorMessage = "Location permission denied. Please allow location access in your browser settings.";
+      } else if (error?.code === 2) {
+        errorMessage = "Location unavailable. Please check your device's GPS/location settings.";
+      } else if (error?.code === 3) {
+        errorMessage = "Location request timed out. Please try again or search manually.";
+      } else if (error?.message === "Geolocation not supported") {
+        errorMessage = "Your browser doesn't support location detection.";
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsDetectingGps(false);
     }

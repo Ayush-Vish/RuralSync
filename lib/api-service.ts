@@ -45,6 +45,13 @@ class ApiService {
     })
   }
 
+  googleLogin(token: string, role: string = 'CLIENT') {
+    return this.request("/api/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ token, role }),
+    })
+  }
+
   register(userData: {
     name: string
     email: string

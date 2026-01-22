@@ -13,6 +13,8 @@ import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
 import { apiService } from "@/lib/api-service"
 import { useAuthStore } from "@/store/store"
+import { useGoogleLogin } from "@react-oauth/google"
+import { toast } from "sonner"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -24,6 +26,32 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      try {
+        const response = await apiService.googleLogin(tokenResponse.access_token, 'CLIENT');
+        
+        // If user data is returned, fetch full profile to update store
+        await useAuthStore.getState().fetchUserProfile();
+        
+        toast.success("Login successful!");
+        router.push("/dashboard");
+      } catch (err: any) {
+        console.error("Google Login Error:", err);
+        setError(err.message || "Google Login failed");
+        toast.error("Google Login failed");
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => {
+      console.error("Google Login Failed");
+      setError("Google Login Failed");
+      toast.error("Google Login connection failed");
+    }
+  });
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -159,9 +187,8 @@ export default function LoginPage() {
               type="button"
               variant="outline"
               className="w-full"
-              onClick={() => {
-                window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/auth/google?role=CLIENT`;
-              }}
+              onClick={() => googleLogin()}
+              disabled={loading}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path

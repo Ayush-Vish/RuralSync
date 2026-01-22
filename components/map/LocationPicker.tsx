@@ -63,14 +63,14 @@ export default function LocationPicker({ onLocationSelect, initialLocation, heig
     setMounted(true)
   }, [])
 
-  // Reverse geocode to get address from coordinates
+  // Reverse geocode to get address from coordinates (using API proxy)
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+        `/api/geocode/reverse?lat=${lat}&lng=${lng}`
       )
       const data = await response.json()
-      const addr = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+      const addr = data.displayName || `${lat.toFixed(6)}, ${lng.toFixed(6)}`
       setAddress(addr)
       onLocationSelect({ latitude: lat, longitude: lng, address: addr })
     } catch (error) {
@@ -81,22 +81,22 @@ export default function LocationPicker({ onLocationSelect, initialLocation, heig
     }
   }
 
-  // Forward geocode to get coordinates from address
+  // Forward geocode to get coordinates from address (using API proxy)
   const searchLocation = async () => {
     if (!searchQuery.trim()) return
 
     setLoading(true)
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`
+        `/api/geocode/search?q=${encodeURIComponent(searchQuery)}`
       )
       const data = await response.json()
       if (data && data.length > 0) {
-        const { lat, lon, display_name } = data[0]
-        const newLocation = { latitude: parseFloat(lat), longitude: parseFloat(lon) }
+        const { lat, lng, displayName } = data[0]
+        const newLocation = { latitude: lat, longitude: lng }
         setLocation(newLocation)
-        setAddress(display_name)
-        onLocationSelect({ ...newLocation, address: display_name })
+        setAddress(displayName)
+        onLocationSelect({ ...newLocation, address: displayName })
       }
     } catch (error) {
       console.error('Geocoding error:', error)

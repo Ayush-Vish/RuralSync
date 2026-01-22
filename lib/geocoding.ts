@@ -1,8 +1,5 @@
-// Geocoding utilities using OpenStreetMap Nominatim API (100% free, no API key required)
-// User-Agent is required per Nominatim usage policy
-
-const NOMINATIM_BASE_URL = "https://nominatim.openstreetmap.org";
-const USER_AGENT = "RuralSync-App/1.0 (https://ruralsync.vercel.app)";
+// Geocoding utilities using Next.js API proxy (calls /api/geocode/*)
+// This avoids direct browser calls to Nominatim and handles rate limiting on the server
 
 export interface GeocodingResult {
   city: string;
@@ -22,19 +19,14 @@ export interface PlaceResult {
   type: string;
 }
 
-// Reverse geocode coordinates to get city name
+// Reverse geocode coordinates to get city name (uses /api/geocode/reverse)
 export async function reverseGeocode(
   lat: number,
   lng: number
 ): Promise<GeocodingResult | null> {
   try {
     const response = await fetch(
-      `${NOMINATIM_BASE_URL}/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`,
-      {
-        headers: {
-          "User-Agent": USER_AGENT,
-        },
-      }
+      `/api/geocode/reverse?lat=${lat}&lng=${lng}`
     );
 
     if (!response.ok) {
@@ -42,23 +34,19 @@ export async function reverseGeocode(
     }
 
     const data = await response.json();
-    const address = data.address;
+    
+    if (data.error) {
+      throw new Error(data.error);
+    }
 
-    // Try to get city from various fields
-    const city =
-      address.city ||
-      address.town ||
-      address.village ||
-      address.municipality ||
-      address.county ||
-      address.state_district ||
-      "";
+    // Extract city name and convert to slug
+    const cityName = data.city || "";
 
     return {
-      city: city.toLowerCase().replace(/\s+/g, "-"),
-      state: address.state || "",
-      country: address.country || "",
-      displayName: data.display_name || "",
+      city: cityName.toLowerCase().replace(/\s+/g, "-"),
+      state: data.state || "",
+      country: data.country || "",
+      displayName: data.displayName || "",
     };
   } catch (error) {
     console.error("Reverse geocoding error:", error);
@@ -66,21 +54,13 @@ export async function reverseGeocode(
   }
 }
 
-// Forward geocode city name to coordinates
+// Forward geocode city name to coordinates (uses /api/geocode/search)
 export async function forwardGeocode(
-  cityName: string,
-  countryCode: string = "in" // Default to India
+  cityName: string
 ): Promise<{ lat: number; lng: number } | null> {
   try {
     const response = await fetch(
-      `${NOMINATIM_BASE_URL}/search?format=json&q=${encodeURIComponent(
-        cityName
-      )}&countrycodes=${countryCode}&limit=1&addressdetails=1`,
-      {
-        headers: {
-          "User-Agent": USER_AGENT,
-        },
-      }
+      `/api/geocode/search?q=${encodeURIComponent(cityName)}&limit=1`
     );
 
     if (!response.ok) {
@@ -88,10 +68,15 @@ export async function forwardGeocode(
     }
 
     const data = await response.json();
-    if (data.length > 0) {
+    
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    
+    if (data && data.length > 0) {
       return {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
+        lat: data[0].lat,
+        lng: data[0].lng,
       };
     }
     return null;
@@ -101,40 +86,22 @@ export async function forwardGeocode(
   }
 }
 
-// Search places with autocomplete (for location picker)
+// Search places with autocomplete (uses /api/geocode/search)
 export async function searchPlaces(
   query: string,
   options: {
     limit?: number;
-    countryCode?: string;
   } = {}
 ): Promise<PlaceResult[]> {
-  const { limit = 5, countryCode = "in" } = options;
+  const { limit = 5 } = options;
 
   if (!query || query.trim().length < 2) {
     return [];
   }
 
   try {
-    const params = new URLSearchParams({
-      format: "json",
-      q: query.trim(),
-      limit: limit.toString(),
-      addressdetails: "1",
-    });
-
-    // Add country code filter if specified
-    if (countryCode) {
-      params.set("countrycodes", countryCode);
-    }
-
     const response = await fetch(
-      `${NOMINATIM_BASE_URL}/search?${params.toString()}`,
-      {
-        headers: {
-          "User-Agent": USER_AGENT,
-        },
-      }
+      `/api/geocode/search?q=${encodeURIComponent(query.trim())}&limit=${limit}`
     );
 
     if (!response.ok) {
@@ -142,36 +109,28 @@ export async function searchPlaces(
     }
 
     const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error);
+    }
 
-    return data.map((place: any) => {
-      const address = place.address || {};
-      const city =
-        address.city ||
-        address.town ||
-        address.village ||
-        address.municipality ||
-        address.county ||
-        address.state_district ||
-        "";
-
-      return {
-        placeId: place.place_id?.toString() || "",
-        lat: parseFloat(place.lat),
-        lng: parseFloat(place.lon),
-        displayName: place.display_name || "",
-        city: city,
-        state: address.state || "",
-        country: address.country || "",
-        type: place.type || "",
-      };
-    });
+    return data.map((place: any) => ({
+      placeId: place.placeId || "",
+      lat: place.lat,
+      lng: place.lng,
+      displayName: place.displayName || "",
+      city: place.city || "",
+      state: place.state || "",
+      country: place.country || "",
+      type: place.type || "",
+    }));
   } catch (error) {
     console.error("Place search error:", error);
     return [];
   }
 }
 
-// Get user's current position
+// Get user's current position with retry logic
 export function getCurrentPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     if (typeof window === "undefined" || !navigator.geolocation) {
@@ -179,11 +138,32 @@ export function getCurrentPosition(): Promise<GeolocationPosition> {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 300000, // Cache for 5 minutes
-    });
+    // First try with high accuracy (GPS) - longer timeout
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (error) => {
+        // If high accuracy fails, try with low accuracy (network-based)
+        if (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE) {
+          console.log("High accuracy failed, trying low accuracy...");
+          navigator.geolocation.getCurrentPosition(
+            resolve,
+            reject,
+            {
+              enableHighAccuracy: false, // Use network/WiFi location
+              timeout: 15000,
+              maximumAge: 600000, // Cache for 10 minutes
+            }
+          );
+        } else {
+          reject(error);
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000, // 20 seconds for GPS
+        maximumAge: 300000, // Cache for 5 minutes
+      }
+    );
   });
 }
 
