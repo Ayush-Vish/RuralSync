@@ -801,7 +801,7 @@ function ServiceCard({
                 </span>
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />
-                  {service.address || "Multiple locations"}
+                  {service?.address || "Multiple locations"}
                 </span>
               </div>
             </CardContent>

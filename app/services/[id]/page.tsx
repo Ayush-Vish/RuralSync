@@ -13,14 +13,63 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar as CalendarIcon, Check, CheckCircle2, CreditCard, ChevronRight, ChevronLeft, Loader2, Info, MapPin, Star, Clock, Phone, Mail, ArrowLeft, ArrowRight, Share2, Heart, CameraOff, Shield } from "lucide-react"
-  ;
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { 
+  Calendar as CalendarIcon, 
+  Check, 
+  CheckCircle2, 
+  CreditCard, 
+  ChevronRight, 
+  ChevronLeft, 
+  Loader2, 
+  Info, 
+  MapPin, 
+  Star, 
+  Clock, 
+  Phone, 
+  Mail, 
+  ArrowLeft, 
+  ArrowRight, 
+  Share2, 
+  Heart, 
+  CameraOff, 
+  Shield,
+  Users,
+  Eye,
+  Globe,
+  Instagram,
+  Youtube,
+  Facebook,
+  AlertCircle,
+  CheckCircle,
+  Zap,
+  Award,
+  FileText,
+  HelpCircle
+} from "lucide-react";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { apiService } from "@/lib/api-service";
 import { Header } from "@/components/header";
 import { ServiceDetail, Review } from "@/types";
 import { format } from "date-fns";
+
+// Dynamic import for map to avoid SSR issues
+const MapView = dynamic(() => import("@/components/map/MapView"), { 
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[300px] bg-slate-100 rounded-xl flex items-center justify-center">
+      <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+    </div>
+  )
+});
 
 export default function ServiceDetailPage() {
   const params = useParams();
@@ -196,7 +245,242 @@ export default function ServiceDetailPage() {
                   {service.description || "No description provided by the provider."}
                 </p>
               </div>
+
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div className="bg-green-50 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-green-600">{service.completedBookings || 0}+</div>
+                  <div className="text-sm text-slate-600">Completed</div>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-600">{service.viewCount || 0}</div>
+                  <div className="text-sm text-slate-600">Views</div>
+                </div>
+                <div className="bg-yellow-50 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-yellow-600">{service.ratings?.average?.toFixed(1) || "N/A"}</div>
+                  <div className="text-sm text-slate-600">Rating</div>
+                </div>
+                <div className="bg-purple-50 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-purple-600">{service.assignedAgents?.length || 0}</div>
+                  <div className="text-sm text-slate-600">Agents</div>
+                </div>
+              </div>
             </div>
+
+            {/* Tabbed Content */}
+            <Tabs defaultValue="features" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 bg-slate-100 p-1 rounded-xl">
+                <TabsTrigger value="features" className="rounded-lg">Features</TabsTrigger>
+                <TabsTrigger value="pricing" className="rounded-lg">Pricing</TabsTrigger>
+                <TabsTrigger value="faq" className="rounded-lg">FAQ</TabsTrigger>
+                <TabsTrigger value="location" className="rounded-lg">Location</TabsTrigger>
+              </TabsList>
+              
+              {/* Features Tab */}
+              <TabsContent value="features" className="mt-6">
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-green-600" />
+                      What&apos;s Included
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {service.features && service.features.length > 0 ? (
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {service.features.map((feature, index) => (
+                          <div key={index} className="flex items-start gap-3 p-4 bg-slate-50 rounded-xl">
+                            <div className="p-2 bg-green-100 rounded-lg">
+                              <CheckCircle className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-slate-900">{feature.title}</h4>
+                              {feature.description && (
+                                <p className="text-sm text-slate-600 mt-1">{feature.description}</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <CheckCircle className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                        <p>Features will be listed here</p>
+                      </div>
+                    )}
+                    
+                    {/* Requirements */}
+                    {service.requirements && service.requirements.length > 0 && (
+                      <div className="mt-6 pt-6 border-t">
+                        <h4 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                          <AlertCircle className="w-5 h-5 text-amber-500" />
+                          Requirements
+                        </h4>
+                        <ul className="space-y-2">
+                          {service.requirements.map((req, index) => (
+                            <li key={index} className="flex items-center gap-2 text-slate-600">
+                              <Check className="w-4 h-4 text-green-600" />
+                              {req}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Cancellation Policy */}
+                    {service.cancellationPolicy && (
+                      <div className="mt-6 pt-6 border-t">
+                        <h4 className="font-semibold text-slate-900 mb-2 flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-blue-500" />
+                          Cancellation Policy
+                        </h4>
+                        <p className="text-slate-600">{service.cancellationPolicy}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Pricing Tab */}
+              <TabsContent value="pricing" className="mt-6">
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-green-600" />
+                      Pricing Options
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {service.pricingTiers && service.pricingTiers.length > 0 ? (
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {service.pricingTiers.map((tier, index) => (
+                          <div 
+                            key={index} 
+                            className={`relative p-6 rounded-xl border-2 transition-all ${
+                              tier.isPopular 
+                                ? 'border-green-500 bg-green-50 shadow-lg' 
+                                : 'border-slate-200 hover:border-green-300'
+                            }`}
+                          >
+                            {tier.isPopular && (
+                              <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-600">
+                                Most Popular
+                              </Badge>
+                            )}
+                            <h4 className="font-bold text-lg text-slate-900">{tier.name}</h4>
+                            <div className="mt-2">
+                              <span className="text-3xl font-bold text-green-600">₹{tier.price}</span>
+                              <span className="text-slate-500">/{tier.duration}</span>
+                            </div>
+                            {tier.description && (
+                              <p className="mt-3 text-sm text-slate-600">{tier.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-4xl font-bold text-green-600 mb-2">
+                          ₹{service.basePrice}
+                        </div>
+                        <p className="text-slate-500">Starting price for {service.estimatedDuration}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* FAQ Tab */}
+              <TabsContent value="faq" className="mt-6">
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <HelpCircle className="w-5 h-5 text-green-600" />
+                      Frequently Asked Questions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {service.faqs && service.faqs.length > 0 ? (
+                      <Accordion type="single" collapsible className="w-full">
+                        {service.faqs.map((faq, index) => (
+                          <AccordionItem key={index} value={`faq-${index}`}>
+                            <AccordionTrigger className="text-left font-medium">
+                              {faq.question}
+                            </AccordionTrigger>
+                            <AccordionContent className="text-slate-600">
+                              {faq.answer}
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <HelpCircle className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                        <p>No FAQs available yet</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Location Tab */}
+              <TabsContent value="location" className="mt-6">
+                <Card className="border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-green-600" />
+                      Service Location
+                    </CardTitle>
+                    <CardDescription>
+                      {service.address?.city && `${service.address.city}, ${service.address.state || ''}`}
+                      {service.serviceArea?.radius && ` • Serves within ${service.serviceArea.radius}km`}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {service.location?.coordinates && service.location.coordinates.length === 2 ? (
+                      <div className="space-y-4">
+                        <MapView 
+                          latitude={service.location.coordinates[1]} 
+                          longitude={service.location.coordinates[0]}
+                          address={service.address?.street ? `${service.address.street}, ${service.address.city}` : service.address?.city}
+                          height="350px"
+                        />
+                        {service.address && (
+                          <div className="p-4 bg-slate-50 rounded-xl">
+                            <h4 className="font-semibold text-slate-900 mb-2">Full Address</h4>
+                            <p className="text-slate-600">
+                              {[
+                                service.address.street,
+                                service.address.landmark && `Near ${service.address.landmark}`,
+                                service.address.city,
+                                service.address.state,
+                                service.address.zipCode,
+                                service.address.country
+                              ].filter(Boolean).join(', ')}
+                            </p>
+                          </div>
+                        )}
+                        {service.serviceArea?.cities && service.serviceArea.cities.length > 0 && (
+                          <div className="p-4 bg-green-50 rounded-xl">
+                            <h4 className="font-semibold text-slate-900 mb-2">Service Areas</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {service.serviceArea.cities.map((city, index) => (
+                                <Badge key={index} variant="secondary">{city}</Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500">
+                        <MapPin className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                        <p>Location details not available</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
 
             {/* Provider Info Card */}
             {service.serviceProvider && (

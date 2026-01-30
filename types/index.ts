@@ -139,11 +139,53 @@ export interface ServiceRatings {
   count: number
 }
 
+export interface ServiceFeature {
+  icon?: string
+  title: string
+  description?: string
+}
+
+export interface ServiceFAQ {
+  question: string
+  answer: string
+}
+
+export interface ServicePricingTier {
+  name: string
+  price: number
+  duration: string
+  description?: string
+  isPopular?: boolean
+}
+
+export interface ServiceAddress {
+  street?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  country?: string
+  landmark?: string
+}
+
+export interface ServiceArea {
+  radius: number
+  cities?: string[]
+}
+
+export interface SocialLinks {
+  website?: string
+  facebook?: string
+  instagram?: string
+  youtube?: string
+}
+
 export interface Service {
   _id: string
   name: string
   description: string
+  shortDescription?: string
   category: string
+  subCategory?: string
   basePrice: number
   estimatedDuration: string
   serviceProvider: {
@@ -154,10 +196,14 @@ export interface Service {
   organization: Organization
   availability: ServiceAvailability[]
   location: GeoLocation
-  address?: string
+  address?: ServiceAddress
   rating?: number
+  reviewCount?: number
   tags?: string[]
   images?: string[]
+  coverImage?: string
+  isFeatured?: boolean
+  completedBookings?: number
   // Fields added by search API
   distance?: number // in meters
   distanceInKm?: number | null // in kilometers (rounded)
@@ -167,19 +213,47 @@ export interface ServiceDetail {
   _id: string
   name: string
   description: string
+  shortDescription?: string
   category: string
+  subCategory?: string
   basePrice: number
   estimatedDuration: string
   serviceProvider?: ServiceProviderDetail
   organization?: Organization
   availability?: ServiceAvailability[]
   location?: GeoLocation
-  address?: Address
+  address?: ServiceAddress
   additionalTasks?: AdditionalTask[]
   ratings?: ServiceRatings
   images?: string[]
+  coverImage?: string
+  videoUrl?: string
   tags?: string[]
   finalPrice?: number
+  isFeatured?: boolean
+  isActive?: boolean
+  
+  // Enhanced Fields
+  features?: ServiceFeature[]
+  faqs?: ServiceFAQ[]
+  pricingTiers?: ServicePricingTier[]
+  requirements?: string[]
+  cancellationPolicy?: string
+  warrantyInfo?: string
+  serviceArea?: ServiceArea
+  minBookingNotice?: number
+  maxBookingsPerDay?: number
+  completedBookings?: number
+  viewCount?: number
+  contactPhone?: string
+  contactEmail?: string
+  socialLinks?: SocialLinks
+  assignedAgents?: Array<{
+    _id: string
+    name: string
+    profileImage?: string
+  }>
+  
   createdAt: string
   updatedAt: string
 }
