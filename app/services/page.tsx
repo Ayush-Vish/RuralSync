@@ -235,7 +235,7 @@ export default function ServicesPage() {
                       </span>
                       <span className="flex items-center gap-1 truncate">
                         <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                        {service.address || "Available nearby"}
+                        {service.address?.street || "Available nearby"} {service.address?.city || ""}
                       </span>
                     </div>
 
