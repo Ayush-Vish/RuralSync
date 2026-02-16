@@ -58,12 +58,19 @@ export interface ServiceProvider {
   name: string
   email: string
   phone?: string
-  address?: string
+  address?: ServiceProviderAddress
   rating?: number
   location?: GeoLocation
   services?: string[]
   service?: ServiceBasic[]
   serviceCompany?: ServiceCompanyDetail
+}
+export interface ServiceProviderAddress {
+  street?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  country?: string
 }
 
 export interface ServiceCompanyDetail {
@@ -76,7 +83,7 @@ export interface ServiceCompanyDetail {
   rating?: number
   reviewCount?: number
   location?: GeoLocation
-  address?: string
+  address?: ServiceProviderAddress
   phone?: string
   website?: string
   businessHours?: BusinessHours[]

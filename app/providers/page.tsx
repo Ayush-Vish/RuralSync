@@ -201,10 +201,16 @@ export default function ProvidersPage() {
                         <span className="truncate">{provider.email}</span>
                       </div>
                     )}
-                    {provider.address && (
+                    {(provider.address && (typeof provider.address === 'string' || (provider.address as any)?.city || (provider.address as any)?.street)) && (
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4" />
-                        <span className="line-clamp-1">{provider.address}</span>
+                        <span className="line-clamp-1">
+                          {typeof provider.address === 'string'
+                            ? provider.address
+                            : [(provider.address as any)?.street, (provider.address as any)?.city, (provider.address as any)?.state]
+                              .filter(Boolean)
+                              .join(', ')}
+                        </span>
                       </div>
                     )}
                   </div>

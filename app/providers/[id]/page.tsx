@@ -254,12 +254,23 @@ export default function ProviderDetailPage() {
                   <CardTitle>Quick Info</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {(company?.address || provider.address) && (
-                    <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                      <span className="text-gray-600">{company?.address || provider.address}</span>
-                    </div>
-                  )}
+                  {((typeof company?.address === 'object' && ((company?.address as any)?.city || (company?.address as any)?.street)) ||
+                    (typeof provider.address === 'object' && ((provider.address as any)?.city || (provider.address as any)?.street)) ||
+                    (typeof company?.address === 'string' && company?.address) ||
+                    (typeof provider.address === 'string' && provider.address)) && (
+                      <div className="flex items-start gap-3">
+                        <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                        <span className="text-gray-600">
+                          {typeof company?.address === 'object' || typeof provider.address === 'object'
+                            ? [
+                              ((company?.address as any)?.street || (provider.address as any)?.street),
+                              ((company?.address as any)?.city || (provider.address as any)?.city),
+                              ((company?.address as any)?.state || (provider.address as any)?.state)
+                            ].filter(Boolean).join(', ')
+                            : (company?.address || provider.address)}
+                        </span>
+                      </div>
+                    )}
                   {(company?.phone || provider.phone) && (
                     <div className="flex items-center gap-3">
                       <Phone className="w-5 h-5 text-gray-400" />
@@ -466,15 +477,27 @@ export default function ProviderDetailPage() {
                   <CardTitle>Contact Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {(company?.address || provider.address) && (
-                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                      <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="font-medium">Address</p>
-                        <p className="text-gray-600">{company?.address || provider.address}</p>
+                  {((typeof company?.address === 'object' && ((company?.address as any)?.city || (company?.address as any)?.street)) ||
+                    (typeof provider.address === 'object' && ((provider.address as any)?.city || (provider.address as any)?.street)) ||
+                    (typeof company?.address === 'string' && company?.address) ||
+                    (typeof provider.address === 'string' && provider.address)) && (
+                      <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                        <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium">Address</p>
+                          <p className="text-gray-600">
+                            {typeof company?.address === 'object' || typeof provider.address === 'object'
+                              ? [
+                                ((company?.address as any)?.street || (provider.address as any)?.street),
+                                ((company?.address as any)?.city || (provider.address as any)?.city),
+                                ((company?.address as any)?.state || (provider.address as any)?.state),
+                                ((company?.address as any)?.zipCode || (provider.address as any)?.zipCode)
+                              ].filter(Boolean).join(', ')
+                              : (company?.address || provider.address)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                   {(company?.phone || provider.phone) && (
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
                       <Phone className="w-5 h-5 text-blue-600" />
