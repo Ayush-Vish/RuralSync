@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, Phone, Mail, Star, X, Navigation } from "lucide-react"
+import { Calendar, Clock, Phone, Mail, Star, X, Navigation, MapPin } from "lucide-react"
 import Link from "next/link"
 import { apiService } from "@/lib/api-service"
 import { Header } from "@/components/header"
@@ -194,11 +194,20 @@ export default function BookingsPage() {
                           )}
 
                           <div className="flex justify-between items-center pt-4 border-t">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 flex-wrap">
                               <Button variant="outline" size="sm">
                                 <Mail className="w-4 h-4 mr-1" />
                                 Contact Provider
                               </Button>
+                              {(booking.status.toUpperCase() === "CONFIRMED" ||
+                                booking.status.toUpperCase() === "IN_PROGRESS") && (
+                                <Link href={`/bookings/${booking._id}/tracking`}>
+                                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 gap-1.5">
+                                    <MapPin className="w-4 h-4" />
+                                    Track Agent Live
+                                  </Button>
+                                </Link>
+                              )}
                               {booking.status.toLowerCase() === "completed" && (
                                 <Link
                                   href={`/reviews/new?serviceProvider=${

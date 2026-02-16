@@ -115,6 +115,11 @@ class ApiService {
     })
   }
 
+  // -------------------- Tracking --------------------
+  getBookingTracking(bookingId: string) {
+    return this.request(`/api/client/bookings/${bookingId}/tracking`)
+  }
+
   // -------------------- Profile --------------------
   getclientProfile() {
     return this.request("/api/client/profile")
