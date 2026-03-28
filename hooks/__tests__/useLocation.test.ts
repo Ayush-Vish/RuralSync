@@ -87,6 +87,31 @@ describe('useLocation', () => {
         expect(mockStore.setDetecting).toHaveBeenCalledWith(false);
     });
 
+    it('should keep coordinates when reverse geocoding fails', async () => {
+        const { result } = renderHook(() => useLocation());
+
+        const mockPosition = {
+            coords: { latitude: 12.34, longitude: 56.78 },
+        } as GeolocationPosition;
+
+        (geocoding.getCurrentPosition as Mock).mockResolvedValue(mockPosition);
+        (geocoding.reverseGeocode as Mock).mockResolvedValue(null);
+
+        await act(async () => {
+            await result.current.detectLocation();
+        });
+
+        expect(mockStore.setLocation).toHaveBeenCalledWith({
+            latitude: 12.34,
+            longitude: 56.78,
+            city: undefined,
+            displayName: '12.34000, 56.78000',
+        });
+        expect(mockStore.setError).toHaveBeenCalledWith(
+            'Location detected, but address lookup failed. You can still continue or edit the address manually.'
+        );
+    });
+
     it('should handle detectLocation error', async () => {
         const { result } = renderHook(() => useLocation());
 
