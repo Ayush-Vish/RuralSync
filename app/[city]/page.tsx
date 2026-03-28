@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { ServiceCard, categoryIcons } from "@/components/service-card";
@@ -14,8 +13,14 @@ import {
   Clock,
   Shield,
   Users,
-  Building2,
   ChevronRight,
+  BadgeIndianRupee,
+  Check,
+  Eye,
+  Scissors,
+  ShieldCheck,
+  Sparkles,
+  Wrench,
 } from "lucide-react";
 import { Service } from "@/types";
 import {
@@ -24,6 +29,48 @@ import {
   SERVICE_CATEGORIES,
   SERVICE_DISPLAY_NAMES,
 } from "@/lib/seo-constants";
+
+const PROVIDER_LOGIN_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://ruralsync-service-provider.vercel.app/login"
+    : "http://localhost:5174/login";
+const PROVIDER_REGISTER_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://ruralsync-service-provider.vercel.app/auth/register"
+    : "http://localhost:5174/auth/register";
+
+const providerPlans = [
+  {
+    name: "Starter",
+    price: "₹499/mo",
+    description: "For solo providers getting listed and taking their first online bookings.",
+    services: "Up to 3 services",
+    agents: "1 agent account",
+    visibility: "Standard local visibility",
+    accent: "from-white/16 to-white/8",
+    badge: "New providers",
+  },
+  {
+    name: "Growth",
+    price: "₹1,499/mo",
+    description: "For active businesses managing multiple services and a small field team.",
+    services: "Up to 10 services",
+    agents: "Up to 5 agents",
+    visibility: "Priority placement in search",
+    accent: "from-emerald-300/25 to-white/10",
+    badge: "Most popular",
+  },
+  {
+    name: "Pro",
+    price: "₹3,999/mo",
+    description: "For established teams that want more reach, more staff, and stronger demand capture.",
+    services: "Unlimited services",
+    agents: "Up to 20 agents",
+    visibility: "Featured visibility across local pages",
+    accent: "from-amber-300/25 to-white/10",
+    badge: "Scale faster",
+  },
+] as const;
 
 // API Base URL
 const API_BASE =
@@ -476,6 +523,159 @@ export default async function CityPage({ params }: PageProps) {
                   <p className="text-sm text-muted-foreground">{item.desc}</p>
                 </Card>
               ))}
+            </div>
+          </section>
+
+          {/* Provider Plans Section */}
+          <section className="mb-16 overflow-hidden rounded-3xl border border-green-200 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 text-white shadow-xl">
+            <div className="grid gap-6 p-6 md:grid-cols-[1.2fr_0.8fr] md:p-8">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium tracking-wide">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Grow On RuralSync
+                </div>
+                <h2 className="mt-4 text-2xl font-bold leading-tight md:text-3xl">
+                  Become a service provider in {cityName}, add any service, and earn more from local demand.
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85 md:text-base">
+                  Join RuralSync to list everyday and skilled services like barber shops, electrical work,
+                  laptop repair, AC service, plumbing, pest control, appliance support, and more.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-2 text-sm">
+                  <span className="rounded-full bg-white/15 px-3 py-1">Barber Shop</span>
+                  <span className="rounded-full bg-white/15 px-3 py-1">Electrical</span>
+                  <span className="rounded-full bg-white/15 px-3 py-1">Laptop Repair</span>
+                  <span className="rounded-full bg-white/15 px-3 py-1">AC Service</span>
+                  <span className="rounded-full bg-white/15 px-3 py-1">Pest Control</span>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                  <a href={PROVIDER_REGISTER_URL}>
+                    <Button className="w-full bg-white text-green-700 hover:bg-green-50 sm:w-auto">
+                      Become a Provider
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </a>
+                  <a href={PROVIDER_LOGIN_URL}>
+                    <Button
+                      variant="outline"
+                      className="w-full border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white sm:w-auto"
+                    >
+                      Provider Login
+                    </Button>
+                  </a>
+                </div>
+              </div>
+
+              <div className="grid gap-3">
+                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-white/15 p-2">
+                      <Scissors className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Any local service</p>
+                      <p className="text-sm text-white/75">Start with home services, shop services, or technical work.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-white/15 p-2">
+                      <Wrench className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Manage services and agents</p>
+                      <p className="text-sm text-white/75">Control bookings, assignments, and day-to-day operations from one dashboard.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-white/15 p-2">
+                      <BadgeIndianRupee className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Earn from bookings</p>
+                      <p className="text-sm text-white/75">Get discovered by local customers and grow recurring revenue.</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-xl bg-white/15 p-2">
+                      <ShieldCheck className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Built for scale</p>
+                      <p className="text-sm text-white/75">Upgrade your plan as you add more services, staff, and visibility needs.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-white/15 bg-slate-950/10 px-6 py-6 md:px-8 md:py-8">
+              <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/70">
+                    Choose Your Plan
+                  </p>
+                  <h3 className="mt-2 text-2xl font-bold">
+                    Pick the plan that matches your services, team size, and visibility goals.
+                  </h3>
+                </div>
+                <p className="max-w-xl text-sm leading-6 text-white/75">
+                  Start small, add more services, onboard agents, and upgrade when you want stronger discovery.
+                </p>
+              </div>
+
+              <div className="mt-6 grid gap-4 xl:grid-cols-3">
+                {providerPlans.map((plan) => (
+                  <div
+                    key={plan.name}
+                    className={`rounded-3xl border border-white/15 bg-gradient-to-br ${plan.accent} p-5 shadow-lg backdrop-blur-sm`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-lg font-semibold">{plan.name}</p>
+                      <p className="mt-1 text-sm leading-6 text-white/75">{plan.description}</p>
+                    </div>
+                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/90">
+                      {plan.badge}
+                    </span>
+                  </div>
+
+                    <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 px-4 py-4">
+                      <div className="flex items-end gap-2">
+                        <span className="text-3xl font-bold text-white">{plan.price}</span>
+                        <span className="pb-1 text-sm text-white/70">billed monthly</span>
+                      </div>
+                    </div>
+
+                  <div className="mt-5 space-y-3 text-sm">
+                      <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3">
+                        <Wrench className="h-4 w-4 text-white/90" />
+                        <span>{plan.services}</span>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3">
+                        <Users className="h-4 w-4 text-white/90" />
+                        <span>{plan.agents}</span>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3">
+                        <Eye className="h-4 w-4 text-white/90" />
+                        <span>{plan.visibility}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 flex items-center gap-2 text-sm text-white/80">
+                      <Check className="h-4 w-4 text-emerald-200" />
+                      <span>Bookings, notifications, and provider dashboard included.</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
 
