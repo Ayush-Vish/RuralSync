@@ -313,12 +313,20 @@ export default function TrackingPage() {
                       </div>
 
                       {agent.phoneNumber && (
-                        <a
-                          href={`tel:${agent.phoneNumber}`}
-                          className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
-                        >
-                          <Phone className="h-4 w-4" />
-                        </a>
+                        <div className="flex items-center gap-2">
+                          <a
+                            href={`tel:${agent.phoneNumber}`}
+                            className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
+                          >
+                            <Phone className="h-4 w-4" />
+                          </a>
+                          <a
+                            href={`tel:${agent.phoneNumber}`}
+                            className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                          >
+                            Call agent
+                          </a>
+                        </div>
                       )}
                     </div>
 

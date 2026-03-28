@@ -24,6 +24,7 @@ import { getStoredCity, storeDetectedCity } from "@/lib/geocoding"
 import { TARGET_CITIES, CITY_DISPLAY_NAMES, getCitySlug } from "@/lib/seo-constants"
 import { LocationSearchInput } from "@/components/location-search-input"
 import { useLocationStore } from "@/store/location-store"
+import { NotificationCenter } from "@/components/notification-center"
 
 export function Header() {
   const { user, isLoggedIn, isLoading, logout } = useAuthStore()
@@ -97,6 +98,16 @@ export function Header() {
       .toUpperCase()
       .slice(0, 2)
   }
+
+  const providerLoginUrl =
+    process.env.NODE_ENV === "production"
+      ? "https://ruralsync-service-provider.vercel.app/login"
+      : "http://localhost:5174/login"
+
+  const agentLoginUrl =
+    process.env.NODE_ENV === "production"
+      ? "https://agent-rural-sync.vercel.app/login"
+      : "http://localhost:5173/login"
 
   return (
     <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
@@ -198,82 +209,95 @@ export function Header() {
                 <div className="w-10 h-10 animate-pulse bg-slate-200 rounded-full"></div>
               </div>
             ) : isLoggedIn && user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full ring-2 ring-green-100 hover:ring-green-200 transition-all">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.profileImage} alt={user.name} />
-                      <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white font-medium">
-                        {getInitials(user.name || "U")}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-64" align="end" forceMount>
-                  <DropdownMenuLabel className="font-normal p-4 bg-slate-50 -m-1 mb-1 rounded-t-lg">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
+              <div className="flex items-center gap-2">
+                <NotificationCenter />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full ring-2 ring-green-100 hover:ring-green-200 transition-all">
+                      <Avatar className="h-10 w-10">
                         <AvatarImage src={user.profileImage} alt={user.name} />
-                        <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+                        <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white font-medium">
                           {getInitials(user.name || "U")}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-900 truncate">{user.name}</p>
-                        <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-64" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal p-4 bg-slate-50 -m-1 mb-1 rounded-t-lg">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={user.profileImage} alt={user.name} />
+                          <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+                            {getInitials(user.name || "U")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-slate-900 truncate">{user.name}</p>
+                          <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                        </div>
                       </div>
+                    </DropdownMenuLabel>
+                    <div className="p-1">
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard" className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg">
+                          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <User className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <span>Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/bookings" className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg">
+                          <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                            <Calendar className="h-4 w-4 text-green-600" />
+                          </div>
+                          <span>My Bookings</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/reviews" className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg">
+                          <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center">
+                            <Star className="h-4 w-4 text-yellow-600" />
+                          </div>
+                          <span>My Reviews</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/settings" className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                            <Settings className="h-4 w-4 text-slate-600" />
+                          </div>
+                          <span>Settings</span>
+                        </Link>
+                      </DropdownMenuItem>
                     </div>
-                  </DropdownMenuLabel>
-                  <div className="p-1">
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg">
-                        <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                          <User className="h-4 w-4 text-blue-600" />
+                    <DropdownMenuSeparator />
+                    <div className="p-1">
+                      <DropdownMenuItem 
+                        onClick={handleLogout} 
+                        className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                          <LogOut className="h-4 w-4 text-red-600" />
                         </div>
-                        <span>Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/bookings" className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg">
-                        <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                          <Calendar className="h-4 w-4 text-green-600" />
-                        </div>
-                        <span>My Bookings</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/reviews" className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg">
-                        <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center">
-                          <Star className="h-4 w-4 text-yellow-600" />
-                        </div>
-                        <span>My Reviews</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/settings" className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
-                          <Settings className="h-4 w-4 text-slate-600" />
-                        </div>
-                        <span>Settings</span>
-                      </Link>
-                    </DropdownMenuItem>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <div className="p-1">
-                    <DropdownMenuItem 
-                      onClick={handleLogout} 
-                      className="cursor-pointer flex items-center gap-3 p-2.5 rounded-lg text-red-600 focus:text-red-600 focus:bg-red-50"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
-                        <LogOut className="h-4 w-4 text-red-600" />
-                      </div>
-                      <span>Log out</span>
-                    </DropdownMenuItem>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                        <span>Log out</span>
+                      </DropdownMenuItem>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ) : (
               <div className="hidden sm:flex items-center gap-2">
+                <a href={providerLoginUrl}>
+                  <Button variant="ghost" className="font-medium text-slate-600">
+                    Provider Login
+                  </Button>
+                </a>
+                <a href={agentLoginUrl}>
+                  <Button variant="ghost" className="font-medium text-slate-600">
+                    Agent Login
+                  </Button>
+                </a>
                 <Link href="/login">
                   <Button variant="ghost" className="font-medium">Login</Button>
                 </Link>
@@ -319,6 +343,26 @@ export function Header() {
               <span>All Services</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
+            {!isLoggedIn && (
+              <a
+                href={providerLoginUrl}
+                className="flex items-center justify-between px-4 py-3 text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>Provider Login</span>
+                <ChevronRight className="w-4 h-4" />
+              </a>
+            )}
+            {!isLoggedIn && (
+              <a
+                href={agentLoginUrl}
+                className="flex items-center justify-between px-4 py-3 text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <span>Agent Login</span>
+                <ChevronRight className="w-4 h-4" />
+              </a>
+            )}
             <Link 
               href="/providers" 
               className="flex items-center justify-between px-4 py-3 text-slate-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"

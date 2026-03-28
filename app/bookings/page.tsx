@@ -152,8 +152,16 @@ export default function BookingsPage() {
                               </h3>
                               <p className="text-gray-600">
                                 by{" "}
-                              
-                                {booking.organization?.name}
+                                {booking.serviceProvider?._id ? (
+                                  <Link
+                                    href={`/providers/${booking.serviceProvider._id}`}
+                                    className="font-medium text-green-700 hover:text-green-800 hover:underline"
+                                  >
+                                    {booking.organization?.name || booking.serviceProvider?.name || "Provider"}
+                                  </Link>
+                                ) : (
+                                  booking.organization?.name || booking.serviceProvider?.name || "Provider"
+                                )}
                               </p>
                             </div>
                           </div>
@@ -169,7 +177,23 @@ export default function BookingsPage() {
                             </div>
                             <div className="flex items-center gap-2 text-gray-600">
                               <Phone className="w-4 h-4" />
-                              <span>{booking?.organization?.phone || booking.serviceProvider?.email}</span>
+                              {booking?.organization?.phone ? (
+                                <a
+                                  href={`tel:${booking.organization.phone}`}
+                                  className="hover:text-green-700 hover:underline"
+                                >
+                                  {booking.organization.phone}
+                                </a>
+                              ) : booking.serviceProvider?.email ? (
+                                <a
+                                  href={`mailto:${booking.serviceProvider.email}`}
+                                  className="hover:text-green-700 hover:underline"
+                                >
+                                  {booking.serviceProvider.email}
+                                </a>
+                              ) : (
+                                <span>Contact unavailable</span>
+                              )}
                             </div>
                             {booking.location && (
                               <div className="flex items-center gap-2 text-gray-600">
@@ -195,10 +219,28 @@ export default function BookingsPage() {
 
                           <div className="flex justify-between items-center pt-4 border-t">
                             <div className="flex items-center gap-4 flex-wrap">
-                              <Button variant="outline" size="sm">
-                                <Mail className="w-4 h-4 mr-1" />
-                                Contact Provider
-                              </Button>
+                              {booking.serviceProvider?._id && (
+                                <Link href={`/providers/${booking.serviceProvider._id}`}>
+                                  <Button variant="outline" size="sm">
+                                    <MapPin className="w-4 h-4 mr-1" />
+                                    View Provider
+                                  </Button>
+                                </Link>
+                              )}
+                              {(booking.serviceProvider?.email || booking.organization?.phone) && (
+                                <a
+                                  href={
+                                    booking.serviceProvider?.email
+                                      ? `mailto:${booking.serviceProvider.email}`
+                                      : `tel:${booking.organization?.phone}`
+                                  }
+                                >
+                                  <Button variant="outline" size="sm">
+                                    <Mail className="w-4 h-4 mr-1" />
+                                    Contact Provider
+                                  </Button>
+                                </a>
+                              )}
                               {(booking.status.toUpperCase() === "CONFIRMED" ||
                                 booking.status.toUpperCase() === "IN_PROGRESS") && (
                                 <Link href={`/bookings/${booking._id}/tracking`}>
