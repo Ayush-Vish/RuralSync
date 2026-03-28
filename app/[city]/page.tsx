@@ -41,34 +41,40 @@ const PROVIDER_REGISTER_URL =
 
 const providerPlans = [
   {
+    planId: "STARTER",
     name: "Starter",
     price: "₹499/mo",
     description: "For solo providers getting listed and taking their first online bookings.",
     services: "Up to 3 services",
     agents: "1 agent account",
     visibility: "Standard local visibility",
-    accent: "from-white/16 to-white/8",
+    accent: "from-white/18 via-white/10 to-transparent",
     badge: "New providers",
+    featured: false,
   },
   {
+    planId: "GROWTH",
     name: "Growth",
     price: "₹1,499/mo",
     description: "For active businesses managing multiple services and a small field team.",
     services: "Up to 10 services",
     agents: "Up to 5 agents",
     visibility: "Priority placement in search",
-    accent: "from-emerald-300/25 to-white/10",
+    accent: "from-emerald-200/30 via-white/14 to-transparent",
     badge: "Most popular",
+    featured: true,
   },
   {
+    planId: "PRO",
     name: "Pro",
     price: "₹3,999/mo",
     description: "For established teams that want more reach, more staff, and stronger demand capture.",
     services: "Unlimited services",
     agents: "Up to 20 agents",
     visibility: "Featured visibility across local pages",
-    accent: "from-amber-300/25 to-white/10",
+    accent: "from-amber-200/30 via-white/12 to-transparent",
     badge: "Scale faster",
+    featured: false,
   },
 ] as const;
 
@@ -386,6 +392,183 @@ export default async function CityPage({ params }: PageProps) {
           </div>
         </section>
 
+        {/* Provider Plans Section */}
+        <section className="relative overflow-hidden border-b border-green-200/80 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 text-white shadow-[0_30px_80px_-32px_rgba(5,150,105,0.7)]">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.16),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.12),transparent_28%)]" />
+
+          <div className="relative container mx-auto grid gap-8 px-4 py-10 md:grid-cols-[1.15fr_0.85fr] md:px-6 lg:px-8 lg:py-12">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/12 px-3 py-1 text-xs font-medium tracking-[0.18em] text-white/90">
+                <Sparkles className="h-3.5 w-3.5" />
+                Grow On RuralSync
+              </div>
+              <h2 className="mt-5 max-w-2xl text-2xl font-bold leading-tight md:text-3xl lg:text-[2.15rem]">
+                Become a service provider in {cityName}, add any service, and earn more from local demand.
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-emerald-50/90 md:text-base">
+                Join RuralSync to list everyday and skilled services like barber shops, electrical work,
+                laptop repair, AC service, plumbing, pest control, appliance support, and more.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-2.5 text-sm">
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5">Barber Shop</span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5">Electrical</span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5">Laptop Repair</span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5">AC Service</span>
+                <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5">Pest Control</span>
+              </div>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a href={PROVIDER_REGISTER_URL}>
+                  <Button className="h-11 w-full bg-white px-6 text-green-700 shadow-lg shadow-emerald-950/20 hover:bg-green-50 sm:w-auto">
+                    Become a Provider
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </a>
+                <a href={PROVIDER_LOGIN_URL}>
+                  <Button
+                    variant="outline"
+                    className="h-11 w-full border-white/25 bg-white/5 px-6 text-white hover:bg-white/10 hover:text-white sm:w-auto"
+                  >
+                    Provider Login
+                  </Button>
+                </a>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <div className="rounded-2xl border border-white/12 bg-white/10 p-4 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-white/15 p-2.5 shadow-inner shadow-white/10">
+                    <Scissors className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Any local service</p>
+                    <p className="text-sm text-white/75">Start with home services, shop services, or technical work.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/12 bg-white/10 p-4 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-white/15 p-2.5 shadow-inner shadow-white/10">
+                    <Wrench className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Manage services and agents</p>
+                    <p className="text-sm text-white/75">Control bookings, assignments, and day-to-day operations from one dashboard.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/12 bg-white/10 p-4 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-white/15 p-2.5 shadow-inner shadow-white/10">
+                    <BadgeIndianRupee className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Earn from bookings</p>
+                    <p className="text-sm text-white/75">Get discovered by local customers and grow recurring revenue.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/12 bg-white/10 p-4 backdrop-blur-md">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-white/15 p-2.5 shadow-inner shadow-white/10">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Built for scale</p>
+                    <p className="text-sm text-white/75">Upgrade your plan as you add more services, staff, and visibility needs.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative border-t border-white/12 bg-slate-950/10 px-6 py-6 md:px-8 md:py-8 lg:px-10">
+            <div className="container mx-auto">
+              <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/65">
+                    Choose Your Plan
+                  </p>
+                  <h3 className="mt-2 text-2xl font-bold md:text-[2rem]">
+                    Pick the plan that matches your services, team size, and visibility goals.
+                  </h3>
+                </div>
+                <p className="max-w-xl text-sm leading-6 text-white/75">
+                  Start small, add more services, onboard agents, and upgrade when you want stronger discovery.
+                </p>
+              </div>
+
+              <div className="mt-8 grid gap-5 xl:grid-cols-3">
+                {providerPlans.map((plan) => (
+                  <div
+                    key={plan.name}
+                    className={`group relative overflow-hidden rounded-[1.75rem] border p-5 shadow-[0_18px_45px_-28px_rgba(15,23,42,0.85)] backdrop-blur-md transition-transform duration-300 hover:-translate-y-1 ${
+                      plan.featured
+                        ? "border-emerald-100/40 bg-gradient-to-br from-white/20 via-emerald-100/10 to-white/8 ring-1 ring-white/20"
+                        : "border-white/12 bg-gradient-to-br from-white/12 via-white/8 to-transparent"
+                    }`}
+                  >
+                    <div className={`pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-br ${plan.accent} opacity-90`} />
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="relative z-10">
+                        <p className="text-lg font-semibold">{plan.name}</p>
+                        <p className="mt-1 text-sm leading-6 text-white/75">{plan.description}</p>
+                      </div>
+                      <span className="relative z-10 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/90">
+                        {plan.badge}
+                      </span>
+                    </div>
+
+                    <div className="relative z-10 mt-6 rounded-2xl border border-white/12 bg-slate-950/16 px-4 py-4">
+                      <div className="flex items-end gap-2">
+                        <span className="text-3xl font-bold text-white">{plan.price}</span>
+                        <span className="pb-1 text-sm text-white/70">billed monthly</span>
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 mt-5 space-y-3 text-sm">
+                      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-3">
+                        <Wrench className="h-4 w-4 text-white/90" />
+                        <span>{plan.services}</span>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-3">
+                        <Users className="h-4 w-4 text-white/90" />
+                        <span>{plan.agents}</span>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-3">
+                        <Eye className="h-4 w-4 text-white/90" />
+                        <span>{plan.visibility}</span>
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 mt-5 flex items-center gap-2 text-sm text-white/80">
+                      <Check className="h-4 w-4 text-emerald-200" />
+                      <span>Bookings, notifications, and provider dashboard included.</span>
+                    </div>
+
+                    <a
+                      href={`${PROVIDER_REGISTER_URL}?plan=${plan.planId}`}
+                      className="relative z-10 mt-5 block"
+                    >
+                      <Button
+                        className={`w-full ${
+                          plan.featured
+                            ? "bg-white text-emerald-700 hover:bg-emerald-50"
+                            : "bg-white/10 text-white hover:bg-white/15"
+                        }`}
+                      >
+                        Choose {plan.name}
+                      </Button>
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Main Content */}
         <main className="container mx-auto px-4 py-12">
           {/* Top Services */}
@@ -523,159 +706,6 @@ export default async function CityPage({ params }: PageProps) {
                   <p className="text-sm text-muted-foreground">{item.desc}</p>
                 </Card>
               ))}
-            </div>
-          </section>
-
-          {/* Provider Plans Section */}
-          <section className="mb-16 overflow-hidden rounded-3xl border border-green-200 bg-gradient-to-br from-green-600 via-emerald-600 to-teal-700 text-white shadow-xl">
-            <div className="grid gap-6 p-6 md:grid-cols-[1.2fr_0.8fr] md:p-8">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium tracking-wide">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Grow On RuralSync
-                </div>
-                <h2 className="mt-4 text-2xl font-bold leading-tight md:text-3xl">
-                  Become a service provider in {cityName}, add any service, and earn more from local demand.
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85 md:text-base">
-                  Join RuralSync to list everyday and skilled services like barber shops, electrical work,
-                  laptop repair, AC service, plumbing, pest control, appliance support, and more.
-                </p>
-
-                <div className="mt-5 flex flex-wrap gap-2 text-sm">
-                  <span className="rounded-full bg-white/15 px-3 py-1">Barber Shop</span>
-                  <span className="rounded-full bg-white/15 px-3 py-1">Electrical</span>
-                  <span className="rounded-full bg-white/15 px-3 py-1">Laptop Repair</span>
-                  <span className="rounded-full bg-white/15 px-3 py-1">AC Service</span>
-                  <span className="rounded-full bg-white/15 px-3 py-1">Pest Control</span>
-                </div>
-
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <a href={PROVIDER_REGISTER_URL}>
-                    <Button className="w-full bg-white text-green-700 hover:bg-green-50 sm:w-auto">
-                      Become a Provider
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </a>
-                  <a href={PROVIDER_LOGIN_URL}>
-                    <Button
-                      variant="outline"
-                      className="w-full border-white/30 bg-transparent text-white hover:bg-white/10 hover:text-white sm:w-auto"
-                    >
-                      Provider Login
-                    </Button>
-                  </a>
-                </div>
-              </div>
-
-              <div className="grid gap-3">
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-white/15 p-2">
-                      <Scissors className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">Any local service</p>
-                      <p className="text-sm text-white/75">Start with home services, shop services, or technical work.</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-white/15 p-2">
-                      <Wrench className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">Manage services and agents</p>
-                      <p className="text-sm text-white/75">Control bookings, assignments, and day-to-day operations from one dashboard.</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-white/15 p-2">
-                      <BadgeIndianRupee className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">Earn from bookings</p>
-                      <p className="text-sm text-white/75">Get discovered by local customers and grow recurring revenue.</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-white/15 p-2">
-                      <ShieldCheck className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">Built for scale</p>
-                      <p className="text-sm text-white/75">Upgrade your plan as you add more services, staff, and visibility needs.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-white/15 bg-slate-950/10 px-6 py-6 md:px-8 md:py-8">
-              <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/70">
-                    Choose Your Plan
-                  </p>
-                  <h3 className="mt-2 text-2xl font-bold">
-                    Pick the plan that matches your services, team size, and visibility goals.
-                  </h3>
-                </div>
-                <p className="max-w-xl text-sm leading-6 text-white/75">
-                  Start small, add more services, onboard agents, and upgrade when you want stronger discovery.
-                </p>
-              </div>
-
-              <div className="mt-6 grid gap-4 xl:grid-cols-3">
-                {providerPlans.map((plan) => (
-                  <div
-                    key={plan.name}
-                    className={`rounded-3xl border border-white/15 bg-gradient-to-br ${plan.accent} p-5 shadow-lg backdrop-blur-sm`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-lg font-semibold">{plan.name}</p>
-                      <p className="mt-1 text-sm leading-6 text-white/75">{plan.description}</p>
-                    </div>
-                    <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/90">
-                      {plan.badge}
-                    </span>
-                  </div>
-
-                    <div className="mt-5 rounded-2xl border border-white/15 bg-white/10 px-4 py-4">
-                      <div className="flex items-end gap-2">
-                        <span className="text-3xl font-bold text-white">{plan.price}</span>
-                        <span className="pb-1 text-sm text-white/70">billed monthly</span>
-                      </div>
-                    </div>
-
-                  <div className="mt-5 space-y-3 text-sm">
-                      <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3">
-                        <Wrench className="h-4 w-4 text-white/90" />
-                        <span>{plan.services}</span>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3">
-                        <Users className="h-4 w-4 text-white/90" />
-                        <span>{plan.agents}</span>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-2xl bg-black/10 px-3 py-3">
-                        <Eye className="h-4 w-4 text-white/90" />
-                        <span>{plan.visibility}</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 flex items-center gap-2 text-sm text-white/80">
-                      <Check className="h-4 w-4 text-emerald-200" />
-                      <span>Bookings, notifications, and provider dashboard included.</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </section>
 
