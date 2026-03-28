@@ -19,6 +19,7 @@ import { Header } from "@/components/header"
 import { apiService } from "@/lib/api-service"
 import { useAuthStore } from "@/store/store"
 import { useLocationStore } from "@/store/location-store"
+import { useLocation } from "@/hooks/useLocation"
 
 const steps = [
   { id: 1, name: "Date & Time" },
@@ -32,6 +33,7 @@ export default function BookingPage() {
   const router = useRouter()
   const { user, isLoggedIn } = useAuthStore()
   const { latitude, longitude, displayName, city } = useLocationStore()
+  const { detectLocation, isDetecting } = useLocation()
 
   const [step, setStep] = useState(1)
   const [date, setDate] = useState<Date | undefined>(new Date())
@@ -42,6 +44,7 @@ export default function BookingPage() {
   const [address, setAddress] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [bookedSlots, setBookedSlots] = useState<string[]>([])
+  const [paymentMethod, setPaymentMethod] = useState<"CARD" | "ONLINE" | "CASH">("ONLINE")
 
   // Initialize address from location store
   useEffect(() => {
@@ -115,6 +118,10 @@ export default function BookingPage() {
     setStep(step - 1)
   }
 
+  const handleDetectBookingLocation = async () => {
+    await detectLocation()
+  }
+
   const handleBook = async () => {
     try {
       setSubmitting(true)
@@ -133,7 +140,8 @@ export default function BookingPage() {
             extraTasks: [],
             address: address || displayName || city || "Customer Address",
             location: bookingLocation,
-            notes: bookingNotes
+            notes: bookingNotes,
+            paymentMethod: paymentMethod === "CASH" ? "CASH" : "ONLINE",
           }
         ]
       }
@@ -276,7 +284,19 @@ export default function BookingPage() {
                               value={address}
                               onChange={(e) => setAddress(e.target.value)}
                             />
-                            <Button variant="outline"><MapPin className="w-4 h-4" /></Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={handleDetectBookingLocation}
+                              disabled={isDetecting}
+                              title="Use current location"
+                            >
+                              {isDetecting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <MapPin className="w-4 h-4" />
+                              )}
+                            </Button>
                           </div>
                         </div>
 
@@ -324,6 +344,16 @@ export default function BookingPage() {
                           <span className="text-slate-500">Location</span>
                           <span className="font-medium truncate max-w-[200px]">{address || "Not specified"}</span>
                         </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">Payment</span>
+                          <span className="font-medium">
+                            {paymentMethod === "CARD"
+                              ? "Credit / Debit Card"
+                              : paymentMethod === "ONLINE"
+                                ? "UPI / Net Banking"
+                                : "Pay on Completion"}
+                          </span>
+                        </div>
                         <Separator />
                         <div className="flex justify-between text-lg font-bold text-slate-900">
                           <span>Total</span>
@@ -344,7 +374,16 @@ export default function BookingPage() {
                       <h2 className="text-xl font-semibold">Payment Method</h2>
 
                       <div className="grid gap-4">
-                        <div className="border p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod("CARD")}
+                          className={cn(
+                            "border p-4 rounded-xl flex items-center gap-4 cursor-pointer transition-colors text-left",
+                            paymentMethod === "CARD"
+                              ? "border-green-500 bg-green-50"
+                              : "hover:border-green-500 hover:bg-green-50"
+                          )}
+                        >
                           <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
                             <CreditCard className="w-5 h-5 text-slate-600" />
                           </div>
@@ -352,9 +391,23 @@ export default function BookingPage() {
                             <p className="font-medium">Credit/Debit Card</p>
                             <p className="text-xs text-slate-500">Pay securely with your card</p>
                           </div>
-                          <div className="w-4 h-4 rounded-full border border-slate-300" />
-                        </div>
-                        <div className="border p-4 rounded-xl flex items-center gap-4 cursor-pointer border-green-500 bg-green-50">
+                          <div className={cn(
+                            "w-4 h-4 rounded-full border flex items-center justify-center",
+                            paymentMethod === "CARD" ? "border-green-600 bg-green-600" : "border-slate-300"
+                          )}>
+                            {paymentMethod === "CARD" && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod("ONLINE")}
+                          className={cn(
+                            "border p-4 rounded-xl flex items-center gap-4 cursor-pointer transition-colors text-left",
+                            paymentMethod === "ONLINE"
+                              ? "border-green-500 bg-green-50"
+                              : "hover:border-green-500 hover:bg-green-50"
+                          )}
+                        >
                           <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
                             <span className="font-bold text-green-700 text-xs">UPI</span>
                           </div>
@@ -362,11 +415,23 @@ export default function BookingPage() {
                             <p className="font-medium">UPI / Net Banking</p>
                             <p className="text-xs text-slate-500">Google Pay, PhonePe, Paytm</p>
                           </div>
-                          <div className="w-4 h-4 rounded-full border border-green-600 bg-green-600 flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
+                          <div className={cn(
+                            "w-4 h-4 rounded-full border flex items-center justify-center",
+                            paymentMethod === "ONLINE" ? "border-green-600 bg-green-600" : "border-slate-300"
+                          )}>
+                            {paymentMethod === "ONLINE" && <Check className="w-3 h-3 text-white" />}
                           </div>
-                        </div>
-                        <div className="border p-4 rounded-xl flex items-center gap-4 cursor-pointer hover:border-green-500 hover:bg-green-50 transition-colors">
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMethod("CASH")}
+                          className={cn(
+                            "border p-4 rounded-xl flex items-center gap-4 cursor-pointer transition-colors text-left",
+                            paymentMethod === "CASH"
+                              ? "border-green-500 bg-green-50"
+                              : "hover:border-green-500 hover:bg-green-50"
+                          )}
+                        >
                           <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center">
                             <span className="font-bold text-slate-600">💵</span>
                           </div>
@@ -374,8 +439,13 @@ export default function BookingPage() {
                             <p className="font-medium">Pay on Completion</p>
                             <p className="text-xs text-slate-500">Pay cash after service</p>
                           </div>
-                          <div className="w-4 h-4 rounded-full border border-slate-300" />
-                        </div>
+                          <div className={cn(
+                            "w-4 h-4 rounded-full border flex items-center justify-center",
+                            paymentMethod === "CASH" ? "border-green-600 bg-green-600" : "border-slate-300"
+                          )}>
+                            {paymentMethod === "CASH" && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                        </button>
                       </div>
                     </motion.div>
                   )}
@@ -413,10 +483,17 @@ export default function BookingPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 <div className="aspect-video bg-slate-100 rounded-lg mb-4">
-                  {/* Placeholder for service image */}
-                  <div className="w-full h-full flex items-center justify-center text-slate-400">
-                    Service Image
-                  </div>
+                  {service.coverImage || service.images?.[0] ? (
+                    <img
+                      src={service.coverImage || service.images?.[0]}
+                      alt={service.name}
+                      className="w-full h-full rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400">
+                      Service Image
+                    </div>
+                  )}
                 </div>
                 <h3 className="font-bold text-lg">{service.name}</h3>
                 <div className="space-y-3 text-sm">

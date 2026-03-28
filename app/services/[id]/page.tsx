@@ -43,6 +43,7 @@ import {
   Users,
   Eye,
   Globe,
+  Building2,
   Instagram,
   Youtube,
   Facebook,
@@ -153,6 +154,29 @@ export default function ServiceDetailPage() {
     );
   }
 
+  const organization = service.organization;
+  const organizationAddress =
+    organization && typeof organization.address !== "string"
+      ? organization.address
+      : null;
+  const providerName =
+    organization?.name ||
+    service.serviceProvider?.companyName ||
+    service.serviceProvider?.name ||
+    "Service Provider";
+  const providerDescription =
+    organization?.description ||
+    service.serviceProvider?.description ||
+    "Dedicated to providing high quality rural services.";
+  const providerLocation =
+    typeof organization?.address === "string"
+      ? organization.address
+      : [
+          organizationAddress?.street,
+          organizationAddress?.city,
+          organizationAddress?.state,
+        ].filter(Boolean).join(", ");
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <Header />
@@ -183,9 +207,9 @@ export default function ServiceDetailPage() {
 
             {/* Gallery Placeholder - In real app, make this a carousel */}
             <div className="aspect-video bg-slate-200 rounded-2xl overflow-hidden shadow-inner relative group">
-              {service.images?.length ? (
+              {service.coverImage || service.images?.length ? (
                 <img
-                  src={service.images[0]}
+                  src={service.coverImage || service.images?.[0]}
                   alt={service.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
@@ -483,27 +507,66 @@ export default function ServiceDetailPage() {
             </Tabs>
 
             {/* Provider Info Card */}
-            {service.serviceProvider && (
+            {(service.serviceProvider || service.organization) && (
               <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <Avatar className="w-16 h-16 border-2 border-white shadow-md">
-                      <AvatarImage src="/placeholder-avatar.jpg" />
+                      <AvatarImage src={organization?.logo} />
                       <AvatarFallback className="bg-green-600 text-white text-xl font-bold">
-                        {service.serviceProvider.companyName?.charAt(0) || "P"}
+                        {providerName?.charAt(0) || "P"}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <h4 className="text-lg font-bold text-slate-900 mb-1">
-                        {service.serviceProvider.companyName || "Service Provider"}
+                        {providerName}
                       </h4>
-                      <p className="text-sm text-slate-500 mb-3">Member since 2024</p>
+                      <p className="text-sm text-slate-500 mb-3">Provider organization</p>
                       <p className="text-sm text-slate-600 leading-relaxed mb-4">
-                        {service.serviceProvider.description || "Dedicated to providing high quality rural services."}
+                        {providerDescription}
                       </p>
-                      <Link href={`/providers/${service.serviceProvider._id}`}>
-                        <Button variant="outline" size="sm">View Profile</Button>
-                      </Link>
+                      <div className="grid gap-2 text-sm text-slate-600 mb-4">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-slate-400" />
+                          <span>{providerName}</span>
+                        </div>
+                        {providerLocation && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-slate-400" />
+                            <span>{providerLocation}</span>
+                          </div>
+                        )}
+                        {(organization?.phone || service.serviceProvider?.phone) && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4 text-slate-400" />
+                            <span>{organization?.phone || service.serviceProvider?.phone}</span>
+                          </div>
+                        )}
+                        {service.serviceProvider?.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-4 h-4 text-slate-400" />
+                            <span>{service.serviceProvider.email}</span>
+                          </div>
+                        )}
+                        {organization?.website && (
+                          <div className="flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-slate-400" />
+                            <a
+                              href={organization.website}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="hover:text-green-600"
+                            >
+                              {organization.website}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                      {service.serviceProvider?._id && (
+                        <Link href={`/providers/${service.serviceProvider._id}`}>
+                          <Button variant="outline" size="sm">View Profile</Button>
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </CardContent>

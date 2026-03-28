@@ -49,8 +49,13 @@ export function useLocation(): UseLocationReturn {
         latitude,
         longitude,
         city: geocodeResult?.city || undefined,
-        displayName: geocodeResult?.displayName || undefined,
+        displayName: geocodeResult?.displayName || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
       });
+
+      if (!geocodeResult) {
+        store.setError("Location detected, but address lookup failed. You can still continue or edit the address manually.");
+        return;
+      }
       
       store.setDetecting(false);
     } catch (error) {
@@ -78,7 +83,7 @@ export function useLocation(): UseLocationReturn {
         latitude: lat,
         longitude: lng,
         city: city || geocodeResult?.city || undefined,
-        displayName: displayName || geocodeResult?.displayName || undefined,
+        displayName: displayName || geocodeResult?.displayName || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
       });
     } else {
       store.setLocation({

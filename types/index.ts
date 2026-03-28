@@ -44,13 +44,16 @@ export interface ServiceProviderBasic {
 
 export interface ServiceProviderDetail {
   _id: string
-  companyName: string
-  contactPerson: string
+  companyName?: string
+  contactPerson?: string
+  name?: string
   email: string
-  phone: string
-  rating: number
-  totalReviews: number
-  description: string
+  phone?: string
+  rating?: number
+  totalReviews?: number
+  description?: string
+  address?: string
+  location?: GeoLocation
 }
 
 export interface ServiceProvider {
@@ -123,6 +126,20 @@ export interface Organization {
   name: string
   description?: string
   phone?: string
+  logo?: string
+  images?: string[]
+  website?: string
+  address?: string | ServiceAddress
+  location?: GeoLocation
+  categories?: string[]
+  rating?: number
+  reviewCount?: number
+  socialMedia?: {
+    facebook?: string
+    twitter?: string
+    instagram?: string
+    linkedin?: string
+  }
 }
 
 // ==========================================

@@ -20,31 +20,34 @@ export async function GET(req: Request) {
   const cacheKey = `reverse:${latNum}:${lngNum}`;
 
   try {
-    // ================================
-    // 1️⃣ Check cache
-    // ================================
-    const cached = await kv.get(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached);
+    let cacheAvailable = true;
+
+    // Cache and rate limiting are optional. Local development should still work
+    // even when Vercel KV is not configured.
+    try {
+      const cached = await kv.get(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached);
+      }
+
+      const ip =
+        req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+
+      const rateKey = `rate:reverse:${ip}`;
+      const count = (await kv.get<number>(rateKey)) || 0;
+
+      if (count > 30) {
+        return NextResponse.json(
+          { error: "Too many requests" },
+          { status: 429 }
+        );
+      }
+
+      await kv.set(rateKey, count + 1, { ex: 60 });
+    } catch (kvError) {
+      cacheAvailable = false;
+      console.warn("Reverse geocode KV unavailable, continuing without cache:", kvError);
     }
-
-    // ================================
-    // 2️⃣ Simple rate limit (per IP)
-    // ================================
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
-
-    const rateKey = `rate:reverse:${ip}`;
-    const count = (await kv.get<number>(rateKey)) || 0;
-
-    if (count > 30) {
-      return NextResponse.json(
-        { error: "Too many requests" },
-        { status: 429 }
-      );
-    }
-
-    await kv.set(rateKey, count + 1, { ex: 60 }); // 30 per minute
 
     // ================================
     // 3️⃣ Call OSM
@@ -82,10 +85,13 @@ export async function GET(req: Request) {
       lng: Number(lngNum),
     };
 
-    // ================================
-    // 5️⃣ Save to cache (30 days)
-    // ================================
-    await kv.set(cacheKey, result, { ex: 60 * 60 * 24 * 30 });
+    if (cacheAvailable) {
+      try {
+        await kv.set(cacheKey, result, { ex: 60 * 60 * 24 * 30 });
+      } catch (kvError) {
+        console.warn("Reverse geocode KV write failed:", kvError);
+      }
+    }
 
     return NextResponse.json(result);
   } catch (error) {

@@ -195,10 +195,18 @@ export default function ServicesPage() {
               <Link href={`/services/${service._id}`} key={service._id}>
                 <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md h-full">
                   {/* Image Header */}
-                  <div className="h-40 bg-gradient-to-br from-green-100 via-emerald-50 to-teal-100 flex items-center justify-center relative">
-                    <span className="text-6xl group-hover:scale-110 transition-transform duration-300">
-                      {categoryIcons[service.category] || "📦"}
-                    </span>
+                  <div className="h-40 bg-gradient-to-br from-green-100 via-emerald-50 to-teal-100 flex items-center justify-center relative overflow-hidden">
+                    {service.coverImage || service.images?.[0] ? (
+                      <img
+                        src={service.coverImage || service.images?.[0]}
+                        alt={service.name}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <span className="text-6xl group-hover:scale-110 transition-transform duration-300">
+                        {categoryIcons[service.category] || "📦"}
+                      </span>
+                    )}
                     <Badge className="absolute top-3 right-3 bg-white/90 text-slate-700 hover:bg-white">
                       {service.category}
                     </Badge>

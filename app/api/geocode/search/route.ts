@@ -20,31 +20,32 @@ export async function GET(req: Request) {
   const cacheKey = `search:${normalizedQ}:${normalizedLimit}`;
 
   try {
-    // ================================
-    // 1️⃣ Check cache
-    // ================================
-    const cached = await kv.get(cacheKey);
-    if (cached) {
-      return NextResponse.json(cached);
+    let cacheAvailable = true;
+
+    try {
+      const cached = await kv.get(cacheKey);
+      if (cached) {
+        return NextResponse.json(cached);
+      }
+
+      const ip =
+        req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
+
+      const rateKey = `rate:search:${ip}`;
+      const count = (await kv.get<number>(rateKey)) || 0;
+
+      if (count > 60) {
+        return NextResponse.json(
+          { error: "Too many requests" },
+          { status: 429 }
+        );
+      }
+
+      await kv.set(rateKey, count + 1, { ex: 60 });
+    } catch (kvError) {
+      cacheAvailable = false;
+      console.warn("Search geocode KV unavailable, continuing without cache:", kvError);
     }
-
-    // ================================
-    // 2️⃣ Simple rate limit (per IP)
-    // ================================
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown";
-
-    const rateKey = `rate:search:${ip}`;
-    const count = (await kv.get<number>(rateKey)) || 0;
-
-    if (count > 60) {
-      return NextResponse.json(
-        { error: "Too many requests" },
-        { status: 429 }
-      );
-    }
-
-    await kv.set(rateKey, count + 1, { ex: 60 }); // 60 per minute
 
     // ================================
     // 3️⃣ Call OSM
@@ -87,10 +88,13 @@ export async function GET(req: Request) {
       type: item.type || "",
     }));
 
-    // ================================
-    // 5️⃣ Save to cache (7 days)
-    // ================================
-    await kv.set(cacheKey, results, { ex: 60 * 60 * 24 * 7 });
+    if (cacheAvailable) {
+      try {
+        await kv.set(cacheKey, results, { ex: 60 * 60 * 24 * 7 });
+      } catch (kvError) {
+        console.warn("Search geocode KV write failed:", kvError);
+      }
+    }
 
     return NextResponse.json(results);
   } catch (error) {
