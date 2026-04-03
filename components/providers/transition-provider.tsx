@@ -1,55 +1,87 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, startTransition } from "react";
 import { TransitionRouter } from "next-transition-router";
 import gsap from "gsap";
 
 export function TransitionProvider({ children }: { children: React.ReactNode }) {
-    const overlayRef = useRef<HTMLDivElement>(null);
+    const firstLayer = useRef<HTMLDivElement | null>(null);
+    const secondLayer = useRef<HTMLDivElement | null>(null);
 
     return (
         <TransitionRouter
             auto={true}
             leave={(next) => {
-                // Drop down from top
-                gsap.fromTo(
-                    overlayRef.current,
-                    { y: "-100vh" },
-                    {
-                        y: "0vh",
-                        duration: 0.8,
-                        ease: "expo.inOut",
+                const tl = gsap
+                    .timeline({
                         onComplete: next,
-                    }
-                );
+                    })
+                    .fromTo(
+                        firstLayer.current,
+                        { y: "100%" },
+                        {
+                            y: 0,
+                            duration: 0.5,
+                            ease: "circ.inOut",
+                        }
+                    )
+                    .fromTo(
+                        secondLayer.current,
+                        { y: "100%" },
+                        {
+                            y: 0,
+                            duration: 0.5,
+                            ease: "circ.inOut",
+                        },
+                        "<50%" // Staggered start halfway through the first animation
+                    );
+
+                return () => {
+                    tl.kill();
+                };
             }}
             enter={(next) => {
-                // Slide down out of view
-                gsap.fromTo(
-                    overlayRef.current,
-                    { y: "0vh" },
-                    {
-                        y: "100vh",
-                        duration: 0.8,
-                        ease: "expo.inOut",
-                        onComplete: next,
-                    }
-                );
+                const tl = gsap
+                    .timeline()
+                    .fromTo(
+                        secondLayer.current,
+                        { y: 0 },
+                        {
+                            y: "-100%",
+                            duration: 0.5,
+                            ease: "circ.inOut",
+                        }
+                    )
+                    .fromTo(
+                        firstLayer.current,
+                        { y: 0 },
+                        {
+                            y: "-100%",
+                            duration: 0.5,
+                            ease: "circ.inOut",
+                        },
+                        "<50%"
+                    )
+                    .call(() => {
+                        // Defer React updates to prevent jank during animation
+                        requestAnimationFrame(() => {
+                            startTransition(next);
+                        });
+                    }, undefined, "<50%");
+
+                return () => {
+                    tl.kill();
+                };
             }}
         >
+            {/* We need pointing-events-none and absolute positioning to avoid disrupting layout */}
             <div
-                ref={overlayRef}
-                style={{
-                    position: "fixed",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100vh",
-                    backgroundColor: "#171717",
-                    zIndex: 9999,
-                    pointerEvents: "none",
-                    transform: "translateY(-100vh)",
-                }}
+                ref={firstLayer}
+                className="fixed inset-0 z-[9998] translate-y-full bg-primary pointer-events-none"
+            />
+            <div
+                ref={secondLayer}
+                className="fixed inset-0 z-[9999] translate-y-full bg-foreground pointer-events-none"
             />
             {children}
         </TransitionRouter>
