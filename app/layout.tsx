@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { GoogleOAuthWrapper } from "@/components/providers/google-auth-provider";
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { TransitionProvider } from "@/components/providers/transition-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -85,7 +86,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <GoogleOAuthWrapper>
-          {children}
+          <TransitionProvider>
+            {children}
+          </TransitionProvider>
         </GoogleOAuthWrapper>
         <Toaster />
       </body>
