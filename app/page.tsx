@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
+import { LocationSearchInput } from "@/components/location-search-input";
 import { Button } from "@/components/ui/button";
 import {
-  reverseGeocode,
   getStoredCity,
+  reverseGeocode,
   storeDetectedCity,
 } from "@/lib/geocoding";
-import { TARGET_CITIES } from "@/lib/seo-constants";
+import { getCitySlug } from "@/lib/seo-constants";
 import { useLocationStore } from "@/store/location-store";
 
-const DEFAULT_CITY = "gwalior";
 const PROVIDER_LOGIN_URL =
   process.env.NODE_ENV === "production"
     ? "https://ruralsync-service-provider.vercel.app/login"
@@ -22,92 +22,182 @@ const AGENT_LOGIN_URL =
     ? "https://agent-rural-sync.vercel.app/login"
     : "http://localhost:5173/login";
 
+type DetectionState = "detecting" | "selecting" | "redirecting";
+
+interface SelectedLocation {
+  lat: number;
+  lng: number;
+  city: string;
+  displayName: string;
+}
+
+function getLocationErrorMessage(error: unknown): string {
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const code = Number((error as { code: unknown }).code);
+
+    if (code === 1) {
+      return "Location permission was denied. Allow it in your browser and retry, or enter your location manually.";
+    }
+    if (code === 2) {
+      return "Your location is unavailable. Check your device settings or enter your location manually.";
+    }
+    if (code === 3) {
+      return "Location permission took too long. You can retry after allowing it or enter your location manually.";
+    }
+  }
+
+  return "We could not detect your location. Retry or enter your location manually.";
+}
+
 export default function RootPage() {
   const router = useRouter();
-  const [status, setStatus] = useState("Detecting your location...");
-  const { setLocation } = useLocationStore();
+  const setLocation = useLocationStore((state) => state.setLocation);
+  const [detectionState, setDetectionState] = useState<DetectionState>("detecting");
+  const [status, setStatus] = useState("Waiting for location permission...");
+  const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
-  useEffect(() => {
-    const detectAndRedirect = async () => {
-      // Check if we have a stored city
-      const storedCity = getStoredCity();
-      if (storedCity) {
-        router.push(`/${storedCity}`);
+  const selectLocation = useCallback(
+    (location: SelectedLocation) => {
+      const cityName = location.city.trim() || location.displayName.split(",")[0]?.trim();
+      if (!cityName) {
+        setDetectionState("selecting");
+        setError("Please select a location that includes a city name.");
         return;
       }
 
-      // Try to detect location
-      if (!navigator.geolocation) {
-        setStatus("Using default location...");
-        storeDetectedCity(DEFAULT_CITY);
-        router.push(`/${DEFAULT_CITY}`);
-        return;
-      }
+      // Ignore a late geolocation callback after the user chooses manually.
+      requestIdRef.current += 1;
+      const citySlug = getCitySlug(cityName);
+      setDetectionState("redirecting");
+      setStatus(`Opening services near ${cityName}...`);
+      setError(null);
+      setLocation({
+        latitude: location.lat,
+        longitude: location.lng,
+        city: citySlug,
+        displayName: location.displayName,
+      });
+      storeDetectedCity(citySlug);
+      router.push(`/${citySlug}`);
+    },
+    [router, setLocation]
+  );
 
-      try {
-        const position = await new Promise<GeolocationPosition>(
-          (resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-              enableHighAccuracy: true,
-              timeout: 8000,
-              maximumAge: 300000,
-            });
-          }
-        );
+  const detectLocation = useCallback(() => {
+    const requestId = ++requestIdRef.current;
+    setDetectionState("detecting");
+    setStatus("Waiting for location permission...");
+    setError(null);
+
+    if (!navigator.geolocation) {
+      setDetectionState("selecting");
+      setStatus("Choose your location");
+      setError("This browser does not support location detection. Enter your location manually.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        if (requestId !== requestIdRef.current) return;
+
+        setDetectionState("redirecting");
+        setStatus("Finding services near you...");
 
         const { latitude, longitude } = position.coords;
-        setStatus("Finding services near you...");
-        
         const geocodeResult = await reverseGeocode(latitude, longitude);
-        console.log( "getcpde => " ,   geocodeResult)
-        if (geocodeResult && geocodeResult.city) {
-          // Check if detected city is in our target cities
-          const detectedCity = geocodeResult.city.toLowerCase();
-          const matchedCity = TARGET_CITIES.find(
-            (c) => c === detectedCity || detectedCity.includes(c)
-          );
+        if (requestId !== requestIdRef.current) return;
 
-          const cityToUse = matchedCity || DEFAULT_CITY;
-          
-          // Update global location store
-          setLocation({
-            latitude,
-            longitude,
-            city: geocodeResult.city,
-            displayName: geocodeResult.displayName,
-          });
-          
-          storeDetectedCity(cityToUse);
-          router.push(`/${cityToUse}`);
-        } else {
-          // Fallback to default
-          storeDetectedCity(DEFAULT_CITY);
-          router.push(`/${DEFAULT_CITY}`);
+        if (!geocodeResult?.city) {
+          setDetectionState("selecting");
+          setStatus("Choose your location");
+          setError("Your coordinates were detected, but the city could not be identified. Enter it manually.");
+          return;
         }
-      } catch (err) {
-        console.error("Location detection failed:", err);
-        // On error, just redirect to default city - don't show selector
-        setStatus("Using default location...");
-        storeDetectedCity(DEFAULT_CITY);
-        router.push(`/${DEFAULT_CITY}`);
-      }
-    };
 
-    detectAndRedirect();
-  }, [router, setLocation]);
+        selectLocation({
+          lat: latitude,
+          lng: longitude,
+          city: geocodeResult.city,
+          displayName: geocodeResult.displayName,
+        });
+      },
+      (geolocationError) => {
+        if (requestId !== requestIdRef.current) return;
+
+        setDetectionState("selecting");
+        setStatus("Choose your location");
+        setError(getLocationErrorMessage(geolocationError));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 300000,
+      }
+    );
+  }, [selectLocation]);
+
+  useEffect(() => {
+    const storedCity = getStoredCity();
+    if (storedCity) {
+      router.push(`/${storedCity}`);
+      return;
+    }
+
+    detectLocation();
+
+    return () => {
+      requestIdRef.current += 1;
+    };
+  }, [detectLocation, router]);
+
+  const isBusy = detectionState !== "selecting";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
-      <div className="w-full max-w-3xl px-4">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <Loader2 className="w-10 h-10 text-green-600 animate-spin" />
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-green-50 to-white">
+      <div className="w-full max-w-3xl px-4 py-10">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+          {isBusy ? (
+            <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+          ) : (
+            <MapPin className="h-10 w-10 text-green-600" />
+          )}
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">
+
+        <h1 className="mb-2 text-center text-2xl font-bold text-slate-900">
           {status}
         </h1>
-        <p className="text-slate-600 text-center">
-          Finding the best services near you
+        <p className="text-center text-slate-600">
+          {detectionState === "detecting"
+            ? "Allow location access when your browser asks, or search manually below."
+            : "Select a city or area to find nearby rural services."}
         </p>
+
+        <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+          {error && (
+            <p role="alert" className="mb-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {error}
+            </p>
+          )}
+
+          <LocationSearchInput
+            placeholder="Enter your city or area"
+            onLocationSelect={selectLocation}
+            showGpsButton={false}
+          />
+
+          {detectionState === "selecting" && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 w-full"
+              onClick={detectLocation}
+            >
+              Retry location detection
+            </Button>
+          )}
+        </div>
+
         <div className="mt-8 rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-sm">
           <p className="text-sm font-medium text-slate-900">Not booking as a customer?</p>
           <p className="mt-1 text-sm text-slate-500">
