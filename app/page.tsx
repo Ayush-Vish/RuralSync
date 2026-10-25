@@ -7,8 +7,10 @@ import { LocationSearchInput } from "@/components/location-search-input";
 import { Button } from "@/components/ui/button";
 import {
   getStoredCity,
+  getStoredLocation,
   reverseGeocode,
   storeDetectedCity,
+  storeLocation,
 } from "@/lib/geocoding";
 import { getCitySlug } from "@/lib/seo-constants";
 import { useLocationStore } from "@/store/location-store";
@@ -79,7 +81,18 @@ export default function RootPage() {
         displayName: location.displayName,
       });
       storeDetectedCity(citySlug);
-      router.push(`/${citySlug}`);
+      storeLocation({
+        lat: location.lat,
+        lng: location.lng,
+        city: citySlug,
+        displayName: location.displayName,
+      });
+
+      const query = new URLSearchParams({
+        lat: location.lat.toString(),
+        lng: location.lng.toString(),
+      });
+      router.push(`/${citySlug}?${query.toString()}`);
     },
     [router, setLocation]
   );
@@ -138,6 +151,16 @@ export default function RootPage() {
   }, [selectLocation]);
 
   useEffect(() => {
+    const storedLocation = getStoredLocation();
+    if (storedLocation) {
+      const query = new URLSearchParams({
+        lat: storedLocation.lat.toString(),
+        lng: storedLocation.lng.toString(),
+      });
+      router.push(`/${storedLocation.city}?${query.toString()}`);
+      return;
+    }
+
     const storedCity = getStoredCity();
     if (storedCity) {
       router.push(`/${storedCity}`);

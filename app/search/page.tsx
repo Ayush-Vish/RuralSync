@@ -39,6 +39,7 @@ import type { Service } from "@/types";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useLocationStore } from "@/store/location-store";
 import { LocationSearchInput } from "@/components/location-search-input";
+import { forwardGeocode } from "@/lib/geocoding";
 
 // Category icons mapping
 const categoryIcons: Record<string, string> = {
@@ -57,6 +58,11 @@ type SortOption = 'relevance' | 'price-low' | 'price-high' | 'rating' | 'distanc
 function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const locationHint =
+    searchParams.get("location") ||
+    searchParams.get("locationText") ||
+    searchParams.get("city") ||
+    "";
   
   // Global location store
   const { 
@@ -72,7 +78,9 @@ function SearchPageContent() {
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [location, setLocation] = useState(searchParams.get("location") || "");
+  const [location, setLocation] = useState(
+    locationHint || globalDisplayName || globalCity || ""
+  );
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "all");
   const [sortBy, setSortBy] = useState<SortOption>((searchParams.get("sort") as SortOption) || "relevance");
   const [priceRange, setPriceRange] = useState<[number, number]>([
@@ -84,24 +92,82 @@ function SearchPageContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [isLocating, setIsLocating] = useState(false);
+  const [isResolvingLocation, setIsResolvingLocation] = useState(
+    Boolean(locationHint)
+  );
+  const serviceRequestIdRef = useRef(0);
   
   // Initialize coords from URL params, then global store, or null
   const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(() => {
     const urlLat = searchParams.get("lat");
     const urlLng = searchParams.get("lng");
     if (urlLat && urlLng) {
-      return { lat: Number(urlLat), lng: Number(urlLng) };
+      const lat = Number(urlLat);
+      const lng = Number(urlLng);
+      if (Number.isFinite(lat) && Number.isFinite(lng)) {
+        return { lat, lng };
+      }
+    }
+    if (
+      globalLat !== null &&
+      globalLng !== null &&
+      Number.isFinite(globalLat) &&
+      Number.isFinite(globalLng)
+    ) {
+      return { lat: globalLat, lng: globalLng };
     }
     return null;
   });
   
-  // Sync with global location store on mount
+  // Resolve legacy city-only URLs and sync a persisted location after hydration.
   useEffect(() => {
-    if (!coords && globalLat && globalLng) {
+    let cancelled = false;
+
+    const resolveLocation = async () => {
+      if (coords) {
+        setIsResolvingLocation(false);
+        return;
+      }
+
+      if (locationHint) {
+        setIsResolvingLocation(true);
+        const result = await forwardGeocode(locationHint);
+        if (cancelled) return;
+
+        if (result) {
+          setCoords(result);
+          setLocation(locationHint);
+          setGlobalLocation({
+            latitude: result.lat,
+            longitude: result.lng,
+            city: locationHint,
+            displayName: locationHint,
+          });
+        }
+        setIsResolvingLocation(false);
+        return;
+      }
+
+      if (globalLat !== null && globalLng !== null) {
       setCoords({ lat: globalLat, lng: globalLng });
       setLocation(globalDisplayName || globalCity || "Current Location");
-    }
-  }, []);
+      }
+      setIsResolvingLocation(false);
+    };
+
+    void resolveLocation();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    coords,
+    globalCity,
+    globalDisplayName,
+    globalLat,
+    globalLng,
+    locationHint,
+    setGlobalLocation,
+  ]);
   
   // Categories from backend
   const [categories, setCategories] = useState<string[]>([]);
@@ -160,6 +226,9 @@ function SearchPageContent() {
   }, []);
 
   const fetchServices = useCallback(async () => {
+    if (isResolvingLocation) return;
+
+    const requestId = ++serviceRequestIdRef.current;
     try {
       setLoading(true);
       const response = await apiService.searchServices({
@@ -175,16 +244,29 @@ function SearchPageContent() {
         limit: 50
       });
 
-      if (response.success) {
+      if (requestId === serviceRequestIdRef.current && response.success) {
         setServices(response.data);
       }
     } catch (error) {
       console.error("Search failed:", error);
-      setServices([]);
+      if (requestId === serviceRequestIdRef.current) {
+        setServices([]);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === serviceRequestIdRef.current) {
+        setLoading(false);
+      }
     }
-  }, [searchQuery, selectedCategory, coords, radiusInKm, priceRange, minRating, sortBy]);
+  }, [
+    searchQuery,
+    selectedCategory,
+    coords,
+    radiusInKm,
+    priceRange,
+    minRating,
+    sortBy,
+    isResolvingLocation,
+  ]);
 
   // Get user's current location
   const handleGetLocation = () => {

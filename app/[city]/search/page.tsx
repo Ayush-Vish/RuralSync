@@ -79,6 +79,8 @@ function SearchPageContent({ city }: SearchPageContentProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLocationReady, setIsLocationReady] = useState(false);
+  const serviceRequestIdRef = useRef(0);
 
   // Categories from backend
   const [categories, setCategories] = useState<string[]>([]);
@@ -93,8 +95,11 @@ function SearchPageContent({ city }: SearchPageContentProps) {
 
   // Get city coordinates on mount and sync with global store
   useEffect(() => {
+    let cancelled = false;
     const getCityCoords = async () => {
       const result = await forwardGeocode(cityName);
+      if (cancelled) return;
+
       if (result) {
         setCoords(result);
         // Update global location store with this city
@@ -105,8 +110,12 @@ function SearchPageContent({ city }: SearchPageContentProps) {
           displayName: cityName,
         });
       }
+      setIsLocationReady(true);
     };
-    getCityCoords();
+    void getCityCoords();
+    return () => {
+      cancelled = true;
+    };
   }, [cityName, setGlobalLocation]);
   
   // Handle location change - redirect to new city or generic search
@@ -187,6 +196,9 @@ function SearchPageContent({ city }: SearchPageContentProps) {
   }, []);
 
   const fetchServices = useCallback(async () => {
+    if (!isLocationReady) return;
+
+    const requestId = ++serviceRequestIdRef.current;
     try {
       setLoading(true);
       const response = await apiService.searchServices({
@@ -203,16 +215,30 @@ function SearchPageContent({ city }: SearchPageContentProps) {
         limit: 50,
       });
 
-      if (response.success) {
+      if (requestId === serviceRequestIdRef.current && response.success) {
         setServices(response.data);
       }
     } catch (error) {
       console.error("Search failed:", error);
-      setServices([]);
+      if (requestId === serviceRequestIdRef.current) {
+        setServices([]);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === serviceRequestIdRef.current) {
+        setLoading(false);
+      }
     }
-  }, [searchQuery, selectedCategory, coords, radiusInKm, priceRange, minRating, sortBy, city]);
+  }, [
+    searchQuery,
+    selectedCategory,
+    coords,
+    radiusInKm,
+    priceRange,
+    minRating,
+    sortBy,
+    city,
+    isLocationReady,
+  ]);
 
   useEffect(() => {
     fetchServices();

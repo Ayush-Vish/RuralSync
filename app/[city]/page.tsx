@@ -26,6 +26,7 @@ import { Service } from "@/types";
 import {
   TARGET_CITIES,
   CITY_DISPLAY_NAMES,
+  CITY_COORDINATES,
   SERVICE_CATEGORIES,
   SERVICE_DISPLAY_NAMES,
 } from "@/lib/seo-constants";
@@ -88,6 +89,37 @@ interface PageProps {
   params: Promise<{
     city: string;
   }>;
+  searchParams?: Promise<{
+    lat?: string;
+    lng?: string;
+  }>;
+}
+
+interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
+function parseCoordinates(
+  latValue?: string,
+  lngValue?: string
+): Coordinates | null {
+  if (latValue === undefined || lngValue === undefined) return null;
+
+  const lat = Number(latValue);
+  const lng = Number(lngValue);
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng) ||
+    lat < -90 ||
+    lat > 90 ||
+    lng < -180 ||
+    lng > 180
+  ) {
+    return null;
+  }
+
+  return { lat, lng };
 }
 
 // Generate metadata for SEO
@@ -153,13 +185,22 @@ function formatCityName(city: string): string {
 }
 
 // Fetch top services from API
-async function fetchTopServices(city: string): Promise<Service[]> {
+async function fetchTopServices(
+  city: string,
+  coordinates: Coordinates | null
+): Promise<Service[]> {
   try {
     const params = new URLSearchParams({
       locationText: city,
       limit: "12",
       sortBy: "rating",
     });
+
+    if (coordinates) {
+      params.set("lat", coordinates.lat.toString());
+      params.set("lng", coordinates.lng.toString());
+      params.set("radiusInKm", "50");
+    }
 
     const response = await fetch(
       `${API_BASE}/api/client/search?${params.toString()}`,
@@ -181,10 +222,23 @@ async function fetchTopServices(city: string): Promise<Service[]> {
 }
 
 // Fetch service providers/organizations
-async function fetchProviders(city: string): Promise<any[]> {
+async function fetchProviders(
+  city: string,
+  coordinates: Coordinates | null
+): Promise<any[]> {
   try {
+    const params = new URLSearchParams({
+      locationText: city,
+      limit: "6",
+    });
+    if (coordinates) {
+      params.set("lat", coordinates.lat.toString());
+      params.set("lng", coordinates.lng.toString());
+      params.set("radiusInKm", "50");
+    }
+
     const response = await fetch(
-      `${API_BASE}/api/client/services/providers?locationText=${encodeURIComponent(city)}&limit=6`,
+      `${API_BASE}/api/client/services/providers?${params.toString()}`,
       {
         next: { revalidate: 3600 },
       }
@@ -261,15 +315,27 @@ function generateJsonLd(city: string, services: Service[]): object {
   ];
 }
 
-export default async function CityPage({ params }: PageProps) {
+export default async function CityPage({ params, searchParams }: PageProps) {
   const { city } = await params;
+  const query = searchParams ? await searchParams : {};
   const cityLower = city.toLowerCase();
   const cityName = CITY_DISPLAY_NAMES[cityLower] || formatCityName(city);
+  const coordinates =
+    parseCoordinates(query.lat, query.lng) || CITY_COORDINATES[cityLower] || null;
+
+  const buildSearchHref = (extra: Record<string, string> = {}) => {
+    const params = new URLSearchParams({ location: cityName, ...extra });
+    if (coordinates) {
+      params.set("lat", coordinates.lat.toString());
+      params.set("lng", coordinates.lng.toString());
+    }
+    return `/search?${params.toString()}`;
+  };
 
   // Fetch data
   const [services, providers] = await Promise.all([
-    fetchTopServices(cityLower),
-    fetchProviders(cityLower),
+    fetchTopServices(cityLower, coordinates),
+    fetchProviders(cityLower, coordinates),
   ]);
 
   // Generate JSON-LD
@@ -325,7 +391,7 @@ export default async function CityPage({ params }: PageProps) {
 
               {/* Search Bar */}
               <div className="max-w-2xl mx-auto">
-                <Link href={`/search?locationText=${cityLower}`}>
+                <Link href={buildSearchHref()}>
                   <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 hover:bg-white/20 transition-all cursor-pointer">
                     <div className="flex items-center gap-3 text-white">
                       <Search className="h-6 w-6" />
@@ -582,7 +648,7 @@ export default async function CityPage({ params }: PageProps) {
                   Highest-rated services by local customers
                 </p>
               </div>
-              <Link href={`/search?locationText=${cityLower}&sortBy=rating`}>
+              <Link href={buildSearchHref({ sort: "rating" })}>
                 <Button variant="outline" className="hidden sm:flex">
                   View All
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -618,7 +684,7 @@ export default async function CityPage({ params }: PageProps) {
 
             {services.length > 6 && (
               <div className="text-center mt-8">
-                <Link href={`/search?locationText=${cityLower}`}>
+                <Link href={buildSearchHref()}>
                   <Button size="lg" className="bg-green-600 hover:bg-green-700">
                     View All {services.length}+ Services
                     <ChevronRight className="ml-2 h-5 w-5" />
@@ -648,7 +714,7 @@ export default async function CityPage({ params }: PageProps) {
                           {category}
                         </h3>
                         <Link
-                          href={`/search?locationText=${cityLower}&category=${encodeURIComponent(category)}`}
+                          href={buildSearchHref({ category })}
                         >
                           <Button variant="ghost" size="sm">
                             View All
@@ -740,7 +806,7 @@ export default async function CityPage({ params }: PageProps) {
               Search from {services.length}+ services and find the perfect match
               for your needs.
             </p>
-            <Link href={`/search?locationText=${cityLower}`}>
+            <Link href={buildSearchHref()}>
               <Button
                 size="lg"
                 className="bg-green-600 hover:bg-green-700 font-semibold px-8 py-6 text-lg"

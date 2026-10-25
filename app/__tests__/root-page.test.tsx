@@ -5,10 +5,12 @@ import RootPage from "../page";
 const mocks = vi.hoisted(() => ({
   getCurrentPosition: vi.fn(),
   getStoredCity: vi.fn(),
+  getStoredLocation: vi.fn(),
   push: vi.fn(),
   reverseGeocode: vi.fn(),
   setLocation: vi.fn(),
   storeDetectedCity: vi.fn(),
+  storeLocation: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -17,8 +19,10 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/geocoding", () => ({
   getStoredCity: mocks.getStoredCity,
+  getStoredLocation: mocks.getStoredLocation,
   reverseGeocode: mocks.reverseGeocode,
   storeDetectedCity: mocks.storeDetectedCity,
+  storeLocation: mocks.storeLocation,
 }));
 
 vi.mock("@/store/location-store", () => ({
@@ -57,6 +61,7 @@ describe("RootPage location selection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getStoredCity.mockReturnValue(null);
+    mocks.getStoredLocation.mockReturnValue(null);
     Object.defineProperty(navigator, "geolocation", {
       configurable: true,
       value: { getCurrentPosition: mocks.getCurrentPosition },
@@ -83,11 +88,21 @@ describe("RootPage location selection", () => {
     render(<RootPage />);
     fireEvent.click(screen.getByRole("button", { name: "Select Indore manually" }));
 
-    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/indore"));
+    await waitFor(() =>
+      expect(mocks.push).toHaveBeenCalledWith(
+        "/indore?lat=22.7196&lng=75.8577"
+      )
+    );
     expect(mocks.storeDetectedCity).toHaveBeenCalledWith("indore");
     expect(mocks.setLocation).toHaveBeenCalledWith({
       latitude: 22.7196,
       longitude: 75.8577,
+      city: "indore",
+      displayName: "Indore, Madhya Pradesh",
+    });
+    expect(mocks.storeLocation).toHaveBeenCalledWith({
+      lat: 22.7196,
+      lng: 75.8577,
       city: "indore",
       displayName: "Indore, Madhya Pradesh",
     });
